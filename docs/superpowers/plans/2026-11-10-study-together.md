@@ -100,7 +100,7 @@
 - [ ] **Step 1: Add the OpenAI SDK and write failing contract tests** — Only confirmed excerpt/selected memories enter prompts; coach-first behavior follows approach; supported claims require a verbatim excerpt; follow-up is optional and non-duplicative; offline packs are versioned, finite, grounded, and contain no network-only references.
 - [ ] **Step 2: Write failure tests** — Missing key, timeout, connection loss, quota, invalid structured output, oversized request, rate excess, and prompt injection in source all return safe recovery with no content logs; partial generation never returns a storable pack.
 - [ ] **Step 3: Confirm failure** — Run `npm test -- src/features/ai src/app/api/study-turn/route.test.ts`.
-- [ ] **Step 4: Implement** — Use Responses API structured output, `OPENAI_TEXT_MODEL` default `gpt-5-mini`, 20-second timeout, 30 turns/session/hour, and deterministic demo through the same schema.
+- [ ] **Step 4: Implement** — Use Responses API Structured Outputs through `text.format`, `OPENAI_TEXT_MODEL` default `gpt-6-luna`, 20-second timeout, 30 turns/session/hour, and deterministic demo through the same schema.
 - [ ] **Step 5: Verify** — Run focused tests and build; logs contain no passages/transcripts.
 - [ ] **Step 6: Commit** — `git add . && git commit -m "feat: add grounded peer response engine"`.
 
