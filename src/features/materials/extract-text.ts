@@ -23,6 +23,32 @@ function typeFor(file: File): AcceptedMaterialType {
 const encryptedOffice = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
 function begins(bytes: Uint8Array, signature: number[]) { return signature.every((value, index) => bytes[index] === value); }
 
+function looksLikeNonText(bytes: Uint8Array): boolean {
+  let start = 0;
+  while (start < bytes.length) {
+    if (begins(bytes.subarray(start), [0xef, 0xbb, 0xbf])) start += 3;
+    else if ([0x20, 0x09, 0x0a, 0x0d, 0x0c].includes(bytes[start])) start++;
+    else break;
+  }
+  const head = bytes.subarray(start);
+  const signatures = [
+    [0x25, 0x50, 0x44, 0x46, 0x2d], // PDF
+    [0x50, 0x4b, 0x03, 0x04], [0x50, 0x4b, 0x05, 0x06], [0x50, 0x4b, 0x07, 0x08], // ZIP
+    encryptedOffice,
+    [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], // PNG
+    [0xff, 0xd8, 0xff], [0x47, 0x49, 0x46, 0x38], // JPEG and GIF
+    [0x52, 0x49, 0x46, 0x46], [0x1f, 0x8b], // RIFF media and gzip
+    [0x25, 0x21, 0x50, 0x53], // PostScript
+  ];
+  if (signatures.some((signature) => begins(head, signature))) return true;
+  const prefix = new TextDecoder().decode(head.subarray(0, 2048)).trimStart();
+  return /^(?:%PDF-|PK[\x03\x05\x07][\x04\x06\x08]|GIF8|%!PS)/.test(prefix)
+    || /^P[1-6](?:\s|#)/.test(prefix)
+    || /^<svg(?:\s|>)/i.test(prefix)
+    || (/^<\?xml\b/i.test(prefix) && /<svg(?:\s|>)/i.test(prefix))
+    || /^\{\\rtf\d/i.test(prefix);
+}
+
 export function prepareMaterial(name: string, type: AcceptedMaterialType, raw: string, warnings: string[] = []): ExtractedMaterial {
   const text = raw.replace(/[\t\r\n ]+/g, " ").trim();
   if (!text) throw new Error(type === "pdf" ? "This PDF has no selectable text. Try a text-based PDF or run OCR first." : "This file is empty. Add text or choose another file.");
@@ -75,7 +101,7 @@ export async function extractMaterial(file: File): Promise<ExtractedMaterial> {
   const pdf = begins(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d]);
   const zip = begins(bytes, [0x50, 0x4b, 0x03, 0x04]);
   if (type === "docx" && begins(bytes, encryptedOffice)) throw new Error("This DOCX may be encrypted. Remove its password and save it as DOCX, then try again.");
-  if ((type === "pdf" && !pdf) || (type === "docx" && !zip) || (type === "text" && (pdf || zip || begins(bytes, encryptedOffice)))) {
+  if ((type === "pdf" && !pdf) || (type === "docx" && !zip) || (type === "text" && looksLikeNonText(bytes))) {
     throw new Error("The file extension does not match its contents. Choose the original file or export it in the correct format.");
   }
   if (type === "text") {

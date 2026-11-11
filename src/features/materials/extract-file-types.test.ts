@@ -20,6 +20,21 @@ describe("document signatures and recovery", () => {
     const bytes = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
     await expect(extractMaterial(file([bytes], "locked.docx", ""))).rejects.toThrow(/encrypted.*Remove its password/i);
   });
+  it.each([
+    " \n\t%PDF-1.7 fake",
+    "\ufeff \n%PDF-1.7 fake",
+    "P3\n2 1\n255\n255 0 0 0 255 0\n",
+    "\ufeff \nP6\n1 1\n255\n",
+    "  GIF89a image",
+    "\n<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>",
+  ])("rejects disguised document or media content: %s", async (content) => {
+    await expect(extractMaterial(file([content], "notes.txt", "text/plain")))
+      .rejects.toThrow(/does not match its contents/i);
+  });
+  it("accepts ordinary Unicode text with a BOM and leading whitespace", async () => {
+    await expect(extractMaterial(file(["\ufeff \n Sēo cwēn gesihþ þone cyning"], "notes.txt", "text/plain")))
+      .resolves.toMatchObject({ text: "Sēo cwēn gesihþ þone cyning", type: "text" });
+  });
   it("gives recovery guidance for empty and image-only content", () => {
     expect(() => prepareMaterial("empty.txt", "text", " ")).toThrow(/empty.*Add text/i);
     expect(() => prepareMaterial("scan.pdf", "pdf", " ")).toThrow(/no selectable text.*OCR/i);
