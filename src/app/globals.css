@@ -13,7 +13,8 @@
 * { box-sizing: border-box; }
 body { background: var(--paper); color: var(--ink); font-family: Arial, Helvetica, sans-serif; margin: 0; }
 button, a { font: inherit; }
-button:focus-visible, a:focus-visible { outline: 3px solid #d06c2e; outline-offset: 3px; }
+button, input, textarea, select { font: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #d06c2e; outline-offset: 3px; }
 .eyebrow { color: var(--evergreen); font-size: .78rem; font-weight: 800; letter-spacing: .11em; margin: 0 0 .4rem; text-transform: uppercase; }
 .landing, .study-room { margin: 0 auto; max-width: 1100px; padding: clamp(1.5rem, 5vw, 4.5rem); }
 .landing { align-items: center; display: grid; gap: 2rem; grid-template-columns: 1.4fr .8fr; min-height: 100vh; }
@@ -51,6 +52,14 @@ cite { color: var(--muted-ink); font-size: .9rem; }
 .captions { align-self: start; grid-column: 2; }
 .captions > p:last-child { font-size: 1.08rem; line-height: 1.55; margin-bottom: 0; }
 .speaker-name { color: var(--evergreen); font-weight: 800; margin-bottom: .4rem; }
+.integrated-flow { display: grid; gap: 1rem; margin-top: 1rem; }
+.integrated-flow label { display: grid; font-weight: 700; gap: .35rem; margin: .7rem 0; }
+.integrated-flow input, .integrated-flow textarea, .integrated-flow select { border: 1px solid var(--line); border-radius: .45rem; min-height: 2.75rem; padding: .65rem; width: 100%; }
+.integrated-flow button { background: white; border: 1px solid var(--evergreen); border-radius: .45rem; color: var(--evergreen); cursor: pointer; margin: .25rem; padding: .55rem .75rem; }
+.integrated-flow button:disabled { cursor: not-allowed; opacity: .55; }
+.session-status, .offline-label { background: var(--moss); border-radius: .5rem; padding: .75rem; }
+.study-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (max-width: 760px) {
   .landing, .room-grid { grid-template-columns: 1fr; }
   .room-header { align-items: start; flex-direction: column; }
@@ -58,3 +67,4 @@ cite { color: var(--muted-ink); font-size: .9rem; }
   .board-heading { flex-direction: column; }
   .board-tools { justify-content: start; }
 }
+@media (max-width: 360px) { .landing, .study-room { padding: 1rem; } .panel { padding: 1rem; } }

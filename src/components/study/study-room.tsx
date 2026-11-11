@@ -2,6 +2,7 @@ import type { StudySession } from "@/features/study/types";
 
 import { PeerList } from "./peer-list";
 import { Whiteboard } from "./whiteboard";
+import { StudyExperience } from "./study-experience";
 
 type StudyRoomProps = {
   session: StudySession;
@@ -55,6 +56,7 @@ export function StudyRoom({ session }: StudyRoomProps) {
           )}
         </section>
       </div>
+      <StudyExperience session={session} />
     </main>
   );
 }

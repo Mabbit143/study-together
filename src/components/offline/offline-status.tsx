@@ -1,0 +1,1 @@
+export function OfflineStatus({ online, hasPack }: { online: boolean; hasPack: boolean }) { return <p className="offline-label">{online ? "Online" : hasPack ? "Prepared offline study — not live AI." : "Offline without a prepared pack — live AI is unavailable."}</p>; }
