@@ -29,3 +29,10 @@ describe("grounded generation", () => {
   expect(() => validatePack({ ...pack, title: "https://example.com" }, request.material.excerpt)).toThrow();
  });
 });
+
+describe("demo teaching approach", () => {
+ it("explains before asking for practice", () => {
+  const turn = demoTurn({ ...request, speaker: "milo" });
+  expect(turn.response).toMatch(/the passage says[\s\S]*practice/i);
+ });
+});

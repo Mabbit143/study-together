@@ -3,7 +3,7 @@ import type { OfflineStudyPackV1 } from "@/features/storage/local-store";
 export function demoTurn(request: StudyTurnRequest): StudyTurnResponse {
  const quote = request.material.excerpt.slice(0, 200);
  const approach = request.peers[request.speaker].approach;
- const response = approach === "question-led" ? `What do you notice in this passage: “${quote}”?` : approach === "example-led" ? `For an example, look at “${quote}”. What stands out to you?` : `Let's examine “${quote}”. What could you practice using this passage?`;
+ const response = approach === "question-led" ? `What do you notice in this passage: “${quote}”?` : approach === "example-led" ? `For an example, look at “${quote}”. What stands out to you?` : `The passage says: “${quote}”. This is source evidence: a supported answer follows from the wording in the passage. Practice: find that wording and explain what it tells you.`;
  return { speaker: request.speaker, response, supportStatus: "supported", citedExcerpt: quote, boardAction: null, memorySuggestion: null, followUp: null };
 }
 export function demoPack(request: StudyTurnRequest): OfflineStudyPackV1 {
