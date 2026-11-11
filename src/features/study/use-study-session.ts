@@ -14,11 +14,12 @@ export type SessionStatus = "empty" | "loading" | "success" | "offline-pack" | "
 export function useStudySession(session: StudySession, initialOnline = true) {
   const initial = useMemo(() => typeof window === "undefined" ? null : loadProfile().profile, []);
   const initialPack = session.id === "imported-material" ? null : initial?.packs.find((pack) => pack.id === initial.activePackId) ?? (initial?.activePackId ? null : initial?.packs[0] ?? null);
+  const initialConnection = typeof navigator === "undefined" ? initialOnline : initialOnline && navigator.onLine;
   const [profile, setProfile] = useState(initial);
-  const [online, setOnlineState] = useState(initialOnline);
+  const [online, setOnlineState] = useState(initialConnection);
   const [input, setInput] = useState("");
   const [turns, setTurns] = useState(session.turns);
-  const [status, setStatus] = useState<SessionStatus>(initialOnline ? "success" : initialPack ? "offline-pack" : "offline-no-pack");
+  const [status, setStatus] = useState<SessionStatus>(initialConnection ? "success" : initialPack ? "offline-pack" : "offline-no-pack");
   const [boardNotes, setBoardNotes] = useState(initialPack?.board.notes ?? session.board.notes);
   const [highlights, setHighlights] = useState(initialPack?.board.highlights ?? []);
   const [selectedTool, setSelectedToolState] = useState<"pointer" | "pen" | "sticky">(initialPack?.board.selectedTool ?? session.board.selectedTool);
@@ -28,7 +29,15 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   const highlight = highlights.at(-1) ?? "";
   const activeMaterial = activePack ? { title: activePack.title, excerpt: activePack.excerpt, citation: "Saved prepared offline study pack" } : session.material;
 
-  useEffect(() => { void registerStudyServiceWorker(); }, []);
+  useEffect(() => {
+    void registerStudyServiceWorker();
+    const applyConnection = (value: boolean) => { setOnlineState(value); setStatus(value ? "success" : activePack ? "offline-pack" : "offline-no-pack"); };
+    const connected = () => applyConnection(true);
+    const disconnected = () => applyConnection(false);
+    window.addEventListener("online", connected);
+    window.addEventListener("offline", disconnected);
+    return () => { window.removeEventListener("online", connected); window.removeEventListener("offline", disconnected); };
+  }, [activePack]);
   const persist = useCallback((next: NonNullable<typeof profile>) => { setProfile(next); saveProfile(next); }, []);
   function setOnline(value: boolean) { setOnlineState(value); setStatus(value ? "success" : activePack ? "offline-pack" : "offline-no-pack"); }
   const requestBody = (question: string, demo: boolean) => ({ sessionId: session.id, material: activeMaterial, peers: profile?.peers ?? defaultPeers, recentTurns: turns.slice(-12), selectedMemories: [...(profile?.memory.helpful ?? []), ...(profile?.memory.difficult ?? [])], question, speaker: "jules" as PeerId, demo });

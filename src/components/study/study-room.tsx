@@ -1,4 +1,5 @@
 "use client";
+import { useSyncExternalStore } from "react";
 import type { StudySession } from "@/features/study/types";
 import { useStudySession } from "@/features/study/use-study-session";
 
@@ -11,6 +12,7 @@ type StudyRoomProps = {
 };
 
 export function StudyRoom({ session }: StudyRoomProps) {
+  const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const study = useStudySession(session);
   const activeTurns = session.turns.filter((turn) => turn.id === session.activeTurnId);
   const [activeTurn] = activeTurns;
@@ -21,6 +23,12 @@ export function StudyRoom({ session }: StudyRoomProps) {
 
   if (activeTurns.length !== 1 || !activePeer) {
     throw new Error("Study session must identify exactly one active turn.");
+  }
+
+  // Local study data exists only in the browser. Render the same stable shell
+  // on the server and during hydration, then reveal the restored room.
+  if (!mounted) {
+    return <main className="study-room"><p role="status">Loading saved study room…</p></main>;
   }
 
   return (
