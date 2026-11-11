@@ -7,6 +7,7 @@ import type { BoardState } from "@/features/study/types";
 type WhiteboardProps = {
   board: BoardState;
   onNotesChange?: (notes: string[]) => void;
+  onSelectedToolChange?: (tool: BoardState["selectedTool"]) => void;
 };
 
 const tools = [
@@ -15,10 +16,11 @@ const tools = [
   { id: "sticky", label: "Sticky note" },
 ] as const;
 
-export function Whiteboard({ board, onNotesChange }: WhiteboardProps) {
+export function Whiteboard({ board, onNotesChange, onSelectedToolChange }: WhiteboardProps) {
   const [selectedTool, setSelectedTool] = useState(board.selectedTool);
   const [notes, setNotes] = useState(board.notes);
   const visibleNotes = onNotesChange ? board.notes : notes;
+  const visibleTool = onSelectedToolChange ? board.selectedTool : selectedTool;
 
   return (
     <section aria-labelledby="board-heading" className="panel whiteboard">
@@ -30,10 +32,10 @@ export function Whiteboard({ board, onNotesChange }: WhiteboardProps) {
         <div aria-label="Whiteboard tools" className="board-tools">
           {tools.map((tool) => (
             <button
-              aria-pressed={selectedTool === tool.id}
+              aria-pressed={visibleTool === tool.id}
               className="tool-button"
               key={tool.id}
-              onClick={() => setSelectedTool(tool.id)}
+              onClick={() => { setSelectedTool(tool.id); onSelectedToolChange?.(tool.id); }}
               type="button"
             >
               {tool.label}
@@ -44,6 +46,7 @@ export function Whiteboard({ board, onNotesChange }: WhiteboardProps) {
           </button>
         </div>
       </div>
+      {board.highlights?.length ? <div aria-label="Grounded source highlights"><h3>Grounded highlights</h3>{board.highlights.map((value) => <mark key={value}>{value}</mark>)}</div> : null}
       <div className="board-surface">
         {visibleNotes.length > 0 ? (
           visibleNotes.map((note) => (

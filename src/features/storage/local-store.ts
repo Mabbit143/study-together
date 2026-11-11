@@ -13,12 +13,12 @@ export const packSchema = z.object({ version: z.literal(1), id: text, title: tex
 });
 const questionSchema = z.object({ id: text, text }).strip();
 const memoryItem = z.object({ id: text, text }).strip();
-const profileSchema = z.object({ version: z.literal(1), peers: z.object({ jules: peerSchema, rae: peerSchema, milo: peerSchema }).strip(), memory: z.object({ helpful: z.array(memoryItem), difficult: z.array(memoryItem) }).strip(), packs: z.array(packSchema), queuedQuestions: z.array(questionSchema) }).strip();
+const profileSchema = z.object({ version: z.literal(1), peers: z.object({ jules: peerSchema, rae: peerSchema, milo: peerSchema }).strip(), memory: z.object({ helpful: z.array(memoryItem), difficult: z.array(memoryItem) }).strip(), packs: z.array(packSchema), activePackId: z.string().nullable().default(null), queuedQuestions: z.array(questionSchema) }).strip().superRefine((profile, ctx) => { if (profile.activePackId && !profile.packs.some((pack) => pack.id === profile.activePackId)) ctx.addIssue({ code: "custom", message: "Active pack must exist." }); });
 const legacySchema = z.object({ version: z.literal(1), peer: peerSchema, memory: z.object({ helpful: z.array(z.string()), difficult: z.array(z.string()) }), packs: z.array(z.unknown()).length(0), queuedQuestions: z.array(questionSchema) });
 export type OfflineStudyPackV1 = z.infer<typeof packSchema>;
 export type QueuedQuestion = z.infer<typeof questionSchema>;
 export type StudyProfileV1 = z.infer<typeof profileSchema>;
-const emptyProfile = (): StudyProfileV1 => ({ version: 1, peers: structuredClone(defaultPeers), memory: { helpful: [], difficult: [] }, packs: [], queuedQuestions: [] });
+const emptyProfile = (): StudyProfileV1 => ({ version: 1, peers: structuredClone(defaultPeers), memory: { helpful: [], difficult: [] }, packs: [], activePackId: null, queuedQuestions: [] });
 export function loadProfile(): { profile: StudyProfileV1; resetNotice: string | null } {
  try {
   const raw = localStorage.getItem(key); if (!raw) return { profile: emptyProfile(), resetNotice: null };
@@ -34,7 +34,7 @@ export function saveProfile(profile: StudyProfileV1): void {
 }
 export function deleteMemory(kind: keyof StudyMemory, id: string): void { const p = loadProfile().profile; p.memory[kind] = p.memory[kind].filter(item => item.id !== id); saveProfile(p); }
 export function editMemory(kind: keyof StudyMemory, id: string, value: string): void { const p = loadProfile().profile; p.memory[kind] = p.memory[kind].map(item => item.id === id ? { ...item, text: value } : item); saveProfile(p); }
-export function deletePack(id: string): void { const p = loadProfile().profile; p.packs = p.packs.filter(pack => pack.id !== id); saveProfile(p); }
+export function deletePack(id: string): void { const p = loadProfile().profile; p.packs = p.packs.filter(pack => pack.id !== id); if (p.activePackId === id) p.activePackId = p.packs[0]?.id ?? null; saveProfile(p); }
 export function queueQuestion(question: QueuedQuestion): void { const p = loadProfile().profile; p.queuedQuestions.push(questionSchema.parse(question)); saveProfile(p); }
 export function deleteQueuedQuestion(id: string): void { const p = loadProfile().profile; p.queuedQuestions = p.queuedQuestions.filter(q => q.id !== id); saveProfile(p); }
 export function clearProfile(): void { localStorage.removeItem(key); }

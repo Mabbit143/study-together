@@ -13,14 +13,16 @@ export type SessionStatus = "empty" | "loading" | "success" | "offline-pack" | "
 
 export function useStudySession(session: StudySession, initialOnline = true) {
   const initial = useMemo(() => typeof window === "undefined" ? null : loadProfile().profile, []);
+  const initialPack = session.id === "imported-material" ? null : initial?.packs.find((pack) => pack.id === initial.activePackId) ?? (initial?.activePackId ? null : initial?.packs[0] ?? null);
   const [profile, setProfile] = useState(initial);
   const [online, setOnlineState] = useState(initialOnline);
   const [input, setInput] = useState("");
   const [turns, setTurns] = useState(session.turns);
-  const [status, setStatus] = useState<SessionStatus>(initialOnline ? "success" : initial?.packs[0] ? "offline-pack" : "offline-no-pack");
-  const [boardNotes, setBoardNotes] = useState(initial?.packs[0]?.board.notes ?? session.board.notes);
-  const [highlight, setHighlightState] = useState(initial?.packs[0]?.board.highlights.at(-1) ?? "");
-  const [activePack, setActivePack] = useState<OfflineStudyPackV1 | null>(initial?.packs[0] ?? null);
+  const [status, setStatus] = useState<SessionStatus>(initialOnline ? "success" : initialPack ? "offline-pack" : "offline-no-pack");
+  const [boardNotes, setBoardNotes] = useState(initialPack?.board.notes ?? session.board.notes);
+  const [highlight, setHighlightState] = useState(initialPack?.board.highlights.at(-1) ?? "");
+  const [selectedTool, setSelectedToolState] = useState<"pointer" | "pen" | "sticky">(initialPack?.board.selectedTool ?? session.board.selectedTool);
+  const [activePack, setActivePack] = useState<OfflineStudyPackV1 | null>(initialPack);
   const activeRequest = useRef<AbortController | null>(null);
   const outbox = profile?.queuedQuestions ?? [];
   const activeMaterial = activePack ? { title: activePack.title, excerpt: activePack.excerpt, citation: "Saved prepared offline study pack" } : session.material;
@@ -54,22 +56,24 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   }
   async function preparePack() {
     if (!online) { setStatus("offline-no-pack"); return; } setStatus("loading");
-    try { const response = await fetch("/api/offline-pack", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestBody(input || "Prepare offline study.", false)) }); if (!response.ok) throw new Error(); const pack = await response.json() as OfflineStudyPackV1; if (profile) persist({ ...profile, packs: [...profile.packs.filter((item) => item.id !== pack.id), pack] }); setActivePack(pack); setBoardNotes(pack.board.notes); setHighlightState(pack.board.highlights.at(-1) ?? ""); setStatus("success"); } catch { setStatus("provider-error"); }
+    try { const response = await fetch("/api/offline-pack", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestBody(input || "Prepare offline study.", false)) }); if (!response.ok) throw new Error(); const pack = await response.json() as OfflineStudyPackV1; if (profile) persist({ ...profile, packs: [...profile.packs.filter((item) => item.id !== pack.id), pack], activePackId: pack.id }); setActivePack(pack); setBoardNotes(pack.board.notes); setHighlightState(pack.board.highlights.at(-1) ?? ""); setSelectedToolState(pack.board.selectedTool); setStatus("success"); } catch { setStatus("provider-error"); }
   }
   async function sendQueued(id: string) { const item = outbox.find((question) => question.id === id); if (!item || !online) return; if (await runTurn(item.text)) { const latest = loadProfile().profile; persist({ ...latest, queuedQuestions: removeFromOutbox(latest.queuedQuestions, id) }); } }
   function deleteQueued(id: string) { if (profile) persist({ ...profile, queuedQuestions: removeFromOutbox(outbox, id) }); }
   function updatePack(update: (pack: OfflineStudyPackV1) => OfflineStudyPackV1) {
-    if (!activePack || !profile) return; const next = update(activePack); setActivePack(next); persist({ ...profile, packs: [...profile.packs.filter((item) => item.id !== next.id), next] });
+    if (!activePack || !profile) return; const next = update(activePack); setActivePack(next); persist({ ...profile, packs: [...profile.packs.filter((item) => item.id !== next.id), next], activePackId: next.id });
   }
   function setHighlight(value: string) { setHighlightState(value); if (value) updatePack((pack) => ({ ...pack, board: { ...pack.board, highlights: [...pack.board.highlights.filter((item) => item !== value), value] } })); }
   function setBoardNotesPersisted(notes: string[]) { setBoardNotes(notes); updatePack((pack) => ({ ...pack, board: { ...pack.board, notes } })); }
+  function setSelectedTool(tool: "pointer" | "pen" | "sticky") { setSelectedToolState(tool); updatePack((pack) => ({ ...pack, board: { ...pack.board, selectedTool: tool } })); }
   function addBoardNote(note: string) { if (note.trim()) setBoardNotesPersisted([...boardNotes, note.trim()]); }
   function saveMemory(kind: "helpful" | "difficult", text: string) { if (profile && text.trim()) persist({ ...profile, memory: { ...profile.memory, [kind]: [...profile.memory[kind], { id: crypto.randomUUID(), text: text.trim() }] } }); }
   function cancelTurn() { activeRequest.current?.abort(); activeRequest.current = null; setStatus("success"); }
-  function importPack(pack: OfflineStudyPackV1) { if (profile) persist({ ...profile, packs: [...profile.packs.filter((item) => item.id !== pack.id), pack] }); setActivePack(pack); setBoardNotes(pack.board.notes); setHighlightState(pack.board.highlights.at(-1) ?? ""); setStatus(online ? "success" : "offline-pack"); }
+  function importPack(pack: OfflineStudyPackV1) { if (profile) persist({ ...profile, packs: [...profile.packs.filter((item) => item.id !== pack.id), pack], activePackId: pack.id }); setActivePack(pack); setBoardNotes(pack.board.notes); setHighlightState(pack.board.highlights.at(-1) ?? ""); setSelectedToolState(pack.board.selectedTool); setStatus(online ? "success" : "offline-pack"); }
+  function selectPack(id: string) { const pack = profile?.packs.find((item) => item.id === id); if (!pack || !profile) return; persist({ ...profile, activePackId: id }); setActivePack(pack); setBoardNotes(pack.board.notes); setHighlightState(pack.board.highlights.at(-1) ?? ""); setSelectedToolState(pack.board.selectedTool); setStatus(online ? "success" : "offline-pack"); }
   function followOfflineBranch(id: string) { updatePack((pack) => followBranch(pack, id)); }
   function completePractice(id: string) { updatePack((pack) => ({ ...pack, progress: { ...pack.progress, completedPracticeIds: [...new Set([...pack.progress.completedPracticeIds, id])] } })); }
-  return { session, activeMaterial, profile, online, setOnline, input, setInput, turns, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, highlight, setHighlight, activePack, setActivePack, importPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile: persist };
+  return { session, activeMaterial, profile, online, setOnline, input, setInput, turns, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, highlight, setHighlight, selectedTool, setSelectedTool, activePack, importPack, selectPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile: persist };
 }
 
 export type StudySessionController = ReturnType<typeof useStudySession>;

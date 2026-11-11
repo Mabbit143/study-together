@@ -76,6 +76,7 @@ describe("useStudySession", () => {
     act(() => first.result.current.followOfflineBranch("proteins"));
     act(() => first.result.current.setBoardNotes(["Compare the organelles"]));
     act(() => first.result.current.setHighlight("Ribosomes build proteins."));
+    act(() => first.result.current.setSelectedTool("pen"));
     act(() => first.result.current.completePractice("practice-proteins"));
     first.unmount();
     const second = renderHook(() => useStudySession(OLD_ENGLISH_DEMO, false));
@@ -85,6 +86,18 @@ describe("useStudySession", () => {
     expect(second.result.current.activePack?.progress.completedPracticeIds).toContain("practice-proteins");
     expect(second.result.current.boardNotes).toContain("Compare the organelles");
     expect(second.result.current.highlight).toBe("Ribosomes build proteins.");
+    expect(second.result.current.selectedTool).toBe("pen");
+  });
+
+  it("persists explicit subject selection and does not override newly imported material", () => {
+    const oldEnglish = demoPack({ sessionId: "old", material: OLD_ENGLISH_DEMO.material, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Old English", speaker: "jules", demo: true });
+    const biology = { ...demoPack({ sessionId: "bio", material: { title: "Biology", excerpt: "Cells contain DNA.", citation: "Science text" }, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Biology", speaker: "rae", demo: true }), id: "biology" };
+    const first = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    act(() => first.result.current.importPack(oldEnglish)); act(() => first.result.current.importPack(biology)); act(() => first.result.current.selectPack(oldEnglish.id)); first.unmount();
+    const oldReload = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); expect(oldReload.result.current.activeMaterial.title).toBe(oldEnglish.title); act(() => oldReload.result.current.selectPack(biology.id)); oldReload.unmount();
+    const bioReload = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); expect(bioReload.result.current.activeMaterial.title).toBe("Biology"); bioReload.unmount();
+    const imported = { ...OLD_ENGLISH_DEMO, id: "imported-material", title: "New history", material: { title: "New history", excerpt: "The treaty was signed in 1919.", citation: "History handout" } };
+    const importedRoom = renderHook(() => useStudySession(imported)); expect(importedRoom.result.current.activePack).toBeNull(); expect(importedRoom.result.current.activeMaterial.title).toBe("New history");
   });
 
   it("prevents an aborted older request from overwriting a newer request", async () => {

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OLD_ENGLISH_DEMO } from "@/features/study/demo-session";
 import { StudyExperience } from "./study-experience";
@@ -7,6 +7,9 @@ import { SessionStatus } from "./session-status";
 import type { SessionStatus as Status } from "@/features/study/use-study-session";
 import { useStudySession } from "@/features/study/use-study-session";
 import { StudyRoom } from "./study-room";
+import { demoPack } from "@/features/ai/demo-engine";
+import { defaultPeers } from "@/features/preferences/peer-preferences";
+import { loadProfile, saveProfile } from "@/features/storage/local-store";
 
 function ExperienceHarness({ online = true }: { online?: boolean }) { return <StudyExperience study={useStudySession(OLD_ENGLISH_DEMO, online)} />; }
 
@@ -54,5 +57,14 @@ describe("StudyExperience", () => {
     expect(await screen.findByLabelText(/optional ai voice playback/i)).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledWith("/api/speech", expect.objectContaining({ method: "POST" }));
     fireEvent.click(screen.getByRole("button", { name: /stop ai voice/i })); expect(screen.queryByLabelText(/optional ai voice playback/i)).not.toBeInTheDocument(); expect(revokeObjectURL).toHaveBeenCalledWith("blob:voice");
+  });
+
+  it("shows live and persisted grounded highlights in the primary whiteboard", async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ speaker: "jules", response: "Queen is supported by the excerpt.", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) }); vi.stubGlobal("fetch", fetcher);
+    render(<StudyRoom session={OLD_ENGLISH_DEMO} />); fireEvent.change(screen.getByRole("textbox", { name: /^your question$/i }), { target: { value: "What is queen?" } }); fireEvent.click(screen.getByRole("button", { name: /send to the group/i }));
+    await waitFor(() => expect(within(screen.getByLabelText(/grounded source highlights/i)).getByText("cwēn")).toBeInTheDocument()); cleanup();
+    const pack = demoPack({ sessionId: "bio", material: { title: "Biology", excerpt: "Cells contain DNA.", citation: "Science" }, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Where is DNA?", speaker: "rae", demo: true }); pack.board.highlights = ["Cells contain DNA."]; pack.board.selectedTool = "sticky";
+    const profile = loadProfile().profile; saveProfile({ ...profile, packs: [pack], activePackId: pack.id }); render(<StudyRoom session={OLD_ENGLISH_DEMO} />);
+    expect(within(screen.getByLabelText(/grounded source highlights/i)).getByText("Cells contain DNA.")).toBeInTheDocument(); expect(screen.getByRole("button", { name: /sticky note/i })).toHaveAttribute("aria-pressed", "true");
   });
 });

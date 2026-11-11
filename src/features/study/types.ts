@@ -9,6 +9,7 @@ export type StudyMaterial = {
 export type BoardState = {
   notes: string[];
   selectedTool: "pointer" | "pen" | "sticky";
+  highlights?: string[];
 };
 
 export type Peer = {
