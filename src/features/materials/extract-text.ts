@@ -23,6 +23,25 @@ function typeFor(file: File): AcceptedMaterialType {
 const encryptedOffice = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
 function begins(bytes: Uint8Array, signature: number[]) { return signature.every((value, index) => bytes[index] === value); }
 
+function hasNetpbmHeader(text: string): boolean {
+  const magic = /^P([1-6])(?=\s|#)/.exec(text);
+  if (!magic) return false;
+  let rest = text.slice(magic[0].length);
+  const values: number[] = [];
+  const count = magic[1] === "1" || magic[1] === "4" ? 2 : 3;
+  for (let index = 0; index < count; index++) {
+    const separator = /^(?:[\t\n\r\f\v ]|#[^\r\n]*(?:\r\n|\r|\n|$))+/.exec(rest);
+    if (!separator) return false;
+    rest = rest.slice(separator[0].length);
+    const number = /^(\d+)(?=\s|#|$)/.exec(rest);
+    if (!number) return false;
+    values.push(Number(number[1]));
+    rest = rest.slice(number[0].length);
+  }
+  return values.every((value) => Number.isSafeInteger(value) && value > 0)
+    && (count === 2 || values[2] <= 65535);
+}
+
 function looksLikeNonText(bytes: Uint8Array): boolean {
   let start = 0;
   while (start < bytes.length) {
@@ -43,7 +62,7 @@ function looksLikeNonText(bytes: Uint8Array): boolean {
   if (signatures.some((signature) => begins(head, signature))) return true;
   const prefix = new TextDecoder().decode(head.subarray(0, 2048)).trimStart();
   return /^(?:%PDF-|PK[\x03\x05\x07][\x04\x06\x08]|GIF8|%!PS)/.test(prefix)
-    || /^P[1-6](?:\s|#)/.test(prefix)
+    || hasNetpbmHeader(prefix)
     || /^<svg(?:\s|>)/i.test(prefix)
     || (/^<\?xml\b/i.test(prefix) && /<svg(?:\s|>)/i.test(prefix))
     || /^\{\\rtf\d/i.test(prefix);

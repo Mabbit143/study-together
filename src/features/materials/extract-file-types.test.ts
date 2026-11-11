@@ -35,6 +35,18 @@ describe("document signatures and recovery", () => {
     await expect(extractMaterial(file(["\ufeff \n Sēo cwēn gesihþ þone cyning"], "notes.txt", "text/plain")))
       .resolves.toMatchObject({ text: "Sēo cwēn gesihþ þone cyning", type: "text" });
   });
+  it.each(["P1 Introduction", "P3 Seminar notes", "P1 Sēo cwēn gesihþ þone cyning", "P3 1 2", "P3 0 2 255"])(
+    "accepts ordinary notes beginning with a Netpbm-like prefix: %s", async (content) => {
+      await expect(extractMaterial(file([content], "notes.txt", "text/plain")))
+        .resolves.toMatchObject({ text: content });
+    },
+  );
+  it.each(["P3\n2 1\n255\n255 0 0 0 255 0\n", "P3 # comment\n2 # width\n1\n255\n", "P1 2 1\n0 1"])(
+    "rejects a plausible PPM header: %s", async (content) => {
+      await expect(extractMaterial(file([content], "notes.txt", "text/plain")))
+        .rejects.toThrow(/does not match its contents/i);
+    },
+  );
   it("gives recovery guidance for empty and image-only content", () => {
     expect(() => prepareMaterial("empty.txt", "text", " ")).toThrow(/empty.*Add text/i);
     expect(() => prepareMaterial("scan.pdf", "pdf", " ")).toThrow(/no selectable text.*OCR/i);
