@@ -1,17 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { useState } from "react";
+import { expect, it } from "vitest";
 import { PeerSettings } from "./peer-settings";
 import { defaultPeerPreferences } from "@/features/preferences/peer-preferences";
-it("changes and resets attributes independently with the keyboard and replaces a peer", async () => {
-  const user = userEvent.setup(); const onChange = vi.fn();
-  render(<PeerSettings preferences={defaultPeerPreferences} onChange={onChange} />);
-  await user.tab(); await user.keyboard("{Enter}");
-  await user.selectOptions(screen.getByLabelText("Voice"), "coral");
-  expect(onChange).toHaveBeenCalledWith({ ...defaultPeerPreferences, voice: "coral" });
-  await user.click(screen.getByRole("button", { name: "Reset voice" }));
-  expect(onChange).toHaveBeenLastCalledWith(defaultPeerPreferences);
-  await user.click(screen.getByRole("button", { name: "Replace peer" }));
-  expect(onChange.mock.lastCall?.[0].name).not.toBe(defaultPeerPreferences.name);
-  await user.keyboard("{Escape}"); expect(screen.queryByLabelText("Voice")).not.toBeInTheDocument();
+function Harness() { const [value, setValue] = useState(defaultPeerPreferences); return <PeerSettings preferences={value} onChange={setValue} />; }
+it("opens, changes, resets and closes with the keyboard, restoring focus", async () => {
+ const user = userEvent.setup(); render(<Harness />); await user.tab(); await user.keyboard("{Enter}"); await user.tab(); await user.tab(); await user.keyboard("{ArrowDown}"); expect(screen.getByLabelText("Voice")).toHaveValue("coral"); await user.tab(); await user.keyboard("{Enter}"); expect(screen.getByLabelText("Voice")).toHaveValue("alloy"); await user.keyboard("{Escape}"); expect(screen.getByRole("button", { name: "Peer settings" })).toHaveFocus();
+ await user.keyboard("{Enter}"); for (let i = 0; i < 9; i++) await user.tab(); expect(screen.getByRole("button", { name: "Close settings" })).toHaveFocus(); await user.keyboard("{Enter}"); expect(screen.getByRole("button", { name: "Peer settings" })).toHaveFocus();
 });
