@@ -45,7 +45,7 @@ export function StudyRoom({ session }: StudyRoomProps) {
           <PeerList peers={visiblePeers} />
         </aside>
 
-        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlight ? [study.highlight] : [], selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onSelectedToolChange={study.setSelectedTool} />
+        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onSelectedToolChange={study.setSelectedTool} />
 
         <section aria-labelledby="captions-heading" aria-live="polite" className="panel captions" role="status">
           <p className="eyebrow">Live support</p>

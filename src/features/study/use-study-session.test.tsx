@@ -75,6 +75,7 @@ describe("useStudySession", () => {
     act(() => first.result.current.importPack(pack));
     act(() => first.result.current.followOfflineBranch("proteins"));
     act(() => first.result.current.setBoardNotes(["Compare the organelles"]));
+    act(() => first.result.current.setHighlight("Mitochondria release energy from food."));
     act(() => first.result.current.setHighlight("Ribosomes build proteins."));
     act(() => first.result.current.setSelectedTool("pen"));
     act(() => first.result.current.completePractice("practice-proteins"));
@@ -86,6 +87,7 @@ describe("useStudySession", () => {
     expect(second.result.current.activePack?.progress.completedPracticeIds).toContain("practice-proteins");
     expect(second.result.current.boardNotes).toContain("Compare the organelles");
     expect(second.result.current.highlight).toBe("Ribosomes build proteins.");
+    expect(second.result.current.highlights).toEqual(["Mitochondria release energy from food.", "Ribosomes build proteins."]);
     expect(second.result.current.selectedTool).toBe("pen");
   });
 
