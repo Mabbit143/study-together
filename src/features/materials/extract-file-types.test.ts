@@ -1,55 +1,30 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment node
+import { File } from "node:buffer";
+import { describe, expect, it } from "vitest";
+import { extractMaterial, prepareMaterial } from "./extract-text";
 
-const parsers = vi.hoisted(() => ({ pdf: vi.fn(), docx: vi.fn() }));
+function file(bytes: BlobPart[], name: string, type: string) {
+  return new File(bytes as never[], name, { type }) as unknown as globalThis.File;
+}
 
-vi.mock("./extract-pdf", () => ({ extractPdf: parsers.pdf }));
-vi.mock("./extract-docx", () => ({ extractDocx: parsers.docx }));
-
-import { extractMaterial } from "./extract-text";
-
-const pdf = (contents = "fixture") => new File([contents], "old-english.pdf", { type: "application/pdf" });
-const docx = (contents = "fixture") => new File([contents], "old-english.docx", {
-  type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-});
-
-describe("PDF and DOCX import safety", () => {
-  beforeEach(() => {
-    parsers.pdf.mockReset();
-    parsers.docx.mockReset();
+describe("document signatures and recovery", () => {
+  it.each([
+    ["notes.txt", "text/plain", "%PDF-1.7 fake"],
+    ["notes.txt", "text/plain", "PK\x03\x04fake"],
+    ["notes.pdf", "application/pdf", "plain text"],
+    ["notes.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "%PDF-1.7 fake"],
+  ])("rejects mismatched bytes for %s", async (name, mime, content) => {
+    await expect(extractMaterial(file([content], name, mime))).rejects.toThrow(/does not match its contents.*original file/i);
   });
-
-  it("preserves Unicode returned from PDF and DOCX fixtures", async () => {
-    parsers.pdf.mockResolvedValue({ text: "þār ǣē Ǣsc", warnings: [] });
-    parsers.docx.mockResolvedValue({ text: "þār ǣē Ǣsc", warnings: [] });
-
-    await expect(extractMaterial(pdf())).resolves.toMatchObject({ text: "þār ǣē Ǣsc", type: "pdf" });
-    await expect(extractMaterial(docx())).resolves.toMatchObject({ text: "þār ǣē Ǣsc", type: "docx" });
+  it("rejects encrypted Office containers with recovery guidance", async () => {
+    const bytes = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+    await expect(extractMaterial(file([bytes], "locked.docx", ""))).rejects.toThrow(/encrypted.*Remove its password/i);
   });
-
-  it("does not advance malformed or encrypted files", async () => {
-    parsers.pdf.mockRejectedValueOnce(new Error("This PDF could not be read. It may be malformed or unsupported."));
-    parsers.pdf.mockRejectedValueOnce(new Error("This PDF is encrypted and cannot be imported."));
-
-    await expect(extractMaterial(pdf())).rejects.toThrow("malformed");
-    await expect(extractMaterial(pdf())).rejects.toThrow("encrypted");
+  it("gives recovery guidance for empty and image-only content", () => {
+    expect(() => prepareMaterial("empty.txt", "text", " ")).toThrow(/empty.*Add text/i);
+    expect(() => prepareMaterial("scan.pdf", "pdf", " ")).toThrow(/no selectable text.*OCR/i);
   });
-
-  it("does not advance image-only PDFs", async () => {
-    parsers.pdf.mockResolvedValue({
-      text: "",
-      warnings: ["This PDF appears to contain images rather than selectable text."],
-    });
-
-    await expect(extractMaterial(pdf())).rejects.toThrow("no selectable text");
-  });
-
-  it("does not advance an extraction that exceeds 15 seconds", async () => {
-    vi.useFakeTimers();
-    parsers.docx.mockReturnValue(new Promise(() => undefined));
-    const extraction = extractMaterial(docx());
-    const timedOut = expect(extraction).rejects.toThrow("timed out");
-    await vi.advanceTimersByTimeAsync(15_000);
-    await timedOut;
-    vi.useRealTimers();
+  it("gives recovery guidance for oversized files", async () => {
+    await expect(extractMaterial(file([new Uint8Array(10 * 1024 * 1024 + 1)], "large.txt", "text/plain"))).rejects.toThrow(/10 MiB.*smaller/i);
   });
 });

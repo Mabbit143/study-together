@@ -18,8 +18,8 @@ describe("real document extraction", () => {
     });
 
     it(`rejects malformed ${extension.toUpperCase()} content even with the expected MIME type`, async () => {
-      const file = new File(["not a document"], `invalid.${extension}`, { type: mime }) as unknown as globalThis.File;
-      await expect(extractMaterial(file)).rejects.toThrow("malformed");
+      const file = new File([extension === "pdf" ? "%PDF-not a document" : "PK\x03\x04not a document"], `invalid.${extension}`, { type: mime }) as unknown as globalThis.File;
+      await expect(extractMaterial(file)).rejects.toThrow(/malformed.*paste the text/i);
     });
   }
 });
