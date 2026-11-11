@@ -1,4 +1,4 @@
-export type PeerId = "mara" | "aelfric" | "wulfstan";
+export type PeerId = "jules" | "rae" | "milo";
 
 export type StudyMaterial = {
   title: string;
@@ -14,16 +14,20 @@ export type BoardState = {
 export type Peer = {
   id: PeerId;
   name: string;
-  role: "Student" | "Translator" | "Coach";
-  aiLabel: "Human learner" | "AI translation assistant" | "AI language coach";
+  function: "facilitates" | "checks sources" | "makes connections";
+  aiLabel: "AI peer";
   isPresent: boolean;
 };
+
+export type AnswerProvenance =
+  | { status: "cited"; sourceCitation: string }
+  | { status: "general-knowledge" };
 
 export type StudyTurn = {
   id: string;
   peerId: PeerId;
   caption: string;
-  isActiveSpeaker: boolean;
+  provenance: AnswerProvenance;
 };
 
 export type StudySession = {
@@ -32,5 +36,6 @@ export type StudySession = {
   material: StudyMaterial;
   peers: Peer[];
   turns: StudyTurn[];
+  activeTurnId: string;
   board: BoardState;
 };

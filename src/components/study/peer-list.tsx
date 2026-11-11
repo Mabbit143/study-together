@@ -17,7 +17,7 @@ export function PeerList({ peers }: PeerListProps) {
             <span aria-hidden="true" className={peer.isPresent ? "presence online" : "presence"} />
             <div>
               <strong>{peer.name}</strong>
-              <p>{peer.role}</p>
+              <p>{peer.function}</p>
               <span className="ai-label">{peer.aiLabel}</span>
             </div>
           </li>

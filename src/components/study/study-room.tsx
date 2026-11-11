@@ -8,8 +8,13 @@ type StudyRoomProps = {
 };
 
 export function StudyRoom({ session }: StudyRoomProps) {
-  const activeTurn = session.turns.find((turn) => turn.isActiveSpeaker);
+  const activeTurns = session.turns.filter((turn) => turn.id === session.activeTurnId);
+  const [activeTurn] = activeTurns;
   const activePeer = session.peers.find((peer) => peer.id === activeTurn?.peerId);
+
+  if (activeTurns.length !== 1 || !activePeer) {
+    throw new Error("Study session must identify exactly one active turn.");
+  }
 
   return (
     <main aria-labelledby="room-title" className="study-room">
@@ -38,8 +43,16 @@ export function StudyRoom({ session }: StudyRoomProps) {
         <section aria-labelledby="captions-heading" aria-live="polite" className="panel captions" role="status">
           <p className="eyebrow">Live support</p>
           <h2 id="captions-heading">Captions</h2>
-          <p className="speaker-name">{activePeer?.name} is speaking</p>
-          <p>{activeTurn?.caption}</p>
+          <p className="speaker-name">{activePeer.name} is speaking</p>
+          <p>{activeTurn.caption}</p>
+          {activeTurn.provenance.status === "cited" ? (
+            <>
+              <p className="answer-status">Answer status: Cited source</p>
+              <cite>Source for this answer: {activeTurn.provenance.sourceCitation}</cite>
+            </>
+          ) : (
+            <p className="answer-status">Answer status: General knowledge</p>
+          )}
         </section>
       </div>
     </main>
