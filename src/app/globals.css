@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f8f3e8;
+  --ink: #243429;
+  --muted-ink: #526458;
+  --evergreen: #255b45;
+  --moss: #d9e6d4;
+  --line: #c9d1be;
+  --sun: #f4df99;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: Arial, Helvetica, sans-serif; margin: 0; }
+button, a { font: inherit; }
+button:focus-visible, a:focus-visible { outline: 3px solid #d06c2e; outline-offset: 3px; }
+.eyebrow { color: var(--evergreen); font-size: .78rem; font-weight: 800; letter-spacing: .11em; margin: 0 0 .4rem; text-transform: uppercase; }
+.landing, .study-room { margin: 0 auto; max-width: 1100px; padding: clamp(1.5rem, 5vw, 4.5rem); }
+.landing { align-items: center; display: grid; gap: 2rem; grid-template-columns: 1.4fr .8fr; min-height: 100vh; }
+.start-panel, .landing-note, .panel { background: #fffdf7; border: 1px solid var(--line); border-radius: 1.1rem; box-shadow: 0 12px 30px #30452a12; }
+.start-panel { padding: clamp(2rem, 6vw, 5rem); }
+.start-panel h1 { font-family: Georgia, serif; font-size: clamp(2.8rem, 7vw, 5.6rem); line-height: .98; margin: 0; }
+.start-panel > p:not(.eyebrow) { color: var(--muted-ink); font-size: 1.15rem; line-height: 1.65; max-width: 43rem; }
+.primary-link { background: var(--evergreen); border-radius: .65rem; color: white; display: inline-block; font-weight: 800; padding: .9rem 1.2rem; text-decoration: none; }
+.primary-link:hover { background: #164130; }
+.landing-note { line-height: 1.6; padding: 1.5rem; }
+.room-header { align-items: end; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1.5rem; }
+.room-header h1, .panel h2 { font-family: Georgia, serif; margin: 0; }
+.room-header h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+.room-status { font-weight: 700; margin: 0; white-space: nowrap; }
+.presence { background: #a8b0a8; border-radius: 50%; display: inline-block; height: .65rem; margin-right: .4rem; width: .65rem; }
+.presence.online { background: #3b9255; }
+.room-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr); }
+.panel { padding: 1.3rem; }
+.material-card { min-height: 14rem; }
+blockquote { border-left: 4px solid var(--evergreen); font-family: Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.5rem); line-height: 1.25; margin: 1.3rem 0 .7rem; padding-left: 1rem; }
+cite { color: var(--muted-ink); font-size: .9rem; }
+.peer-list ul { list-style: none; margin: 1rem 0 0; padding: 0; }
+.peer-list li { align-items: flex-start; border-top: 1px solid var(--line); display: flex; gap: .5rem; padding: .8rem 0; }
+.peer-list p { color: var(--muted-ink); font-size: .9rem; margin: .1rem 0; }
+.ai-label { color: var(--evergreen); font-size: .78rem; font-weight: 700; }
+.whiteboard { grid-column: 1 / 2; }
+.board-heading { align-items: start; display: flex; gap: 1rem; justify-content: space-between; }
+.board-tools { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: end; }
+.tool-button { background: white; border: 1px solid var(--line); border-radius: .45rem; color: var(--ink); cursor: pointer; padding: .4rem .65rem; }
+.tool-button[aria-pressed="true"] { background: var(--moss); border-color: var(--evergreen); font-weight: 800; }
+.tool-button.danger { color: #91422a; }
+.board-surface { background-color: #fdfaf0; background-image: linear-gradient(#dbe4d245 1px, transparent 1px), linear-gradient(90deg, #dbe4d245 1px, transparent 1px); background-size: 22px 22px; border: 1px dashed var(--line); border-radius: .7rem; display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; min-height: 12rem; padding: 1.2rem; }
+.sticky-note { align-self: flex-start; background: var(--sun); box-shadow: 2px 3px 8px #6b592b26; margin: 0; padding: 1rem; transform: rotate(-1deg); }
+.empty-board { align-self: center; color: var(--muted-ink); margin: auto; text-align: center; }
+.captions { align-self: start; grid-column: 2; }
+.captions > p:last-child { font-size: 1.08rem; line-height: 1.55; margin-bottom: 0; }
+.speaker-name { color: var(--evergreen); font-weight: 800; margin-bottom: .4rem; }
+@media (max-width: 760px) {
+  .landing, .room-grid { grid-template-columns: 1fr; }
+  .room-header { align-items: start; flex-direction: column; }
+  .whiteboard, .captions { grid-column: auto; }
+  .board-heading { flex-direction: column; }
+  .board-tools { justify-content: start; }
+}
