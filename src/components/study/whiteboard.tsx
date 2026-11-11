@@ -6,6 +6,7 @@ import type { BoardState } from "@/features/study/types";
 
 type WhiteboardProps = {
   board: BoardState;
+  onNotesChange?: (notes: string[]) => void;
 };
 
 const tools = [
@@ -14,9 +15,10 @@ const tools = [
   { id: "sticky", label: "Sticky note" },
 ] as const;
 
-export function Whiteboard({ board }: WhiteboardProps) {
+export function Whiteboard({ board, onNotesChange }: WhiteboardProps) {
   const [selectedTool, setSelectedTool] = useState(board.selectedTool);
   const [notes, setNotes] = useState(board.notes);
+  const visibleNotes = onNotesChange ? board.notes : notes;
 
   return (
     <section aria-labelledby="board-heading" className="panel whiteboard">
@@ -37,14 +39,14 @@ export function Whiteboard({ board }: WhiteboardProps) {
               {tool.label}
             </button>
           ))}
-          <button className="tool-button danger" onClick={() => setNotes([])} type="button">
+          <button className="tool-button danger" onClick={() => { setNotes([]); onNotesChange?.([]); }} type="button">
             Clear board
           </button>
         </div>
       </div>
       <div className="board-surface">
-        {notes.length > 0 ? (
-          notes.map((note) => (
+        {visibleNotes.length > 0 ? (
+          visibleNotes.map((note) => (
             <p className="sticky-note" key={note}>
               {note}
             </p>
@@ -53,6 +55,7 @@ export function Whiteboard({ board }: WhiteboardProps) {
           <p className="empty-board">Board cleared. Choose a tool to add your next thought.</p>
         )}
       </div>
+      {onNotesChange && <form onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); const note = String(form.get("note") ?? "").trim(); if (note) { const next = [...visibleNotes, note]; onNotesChange(next); event.currentTarget.reset(); } }}><label>Add board note<input name="note" /></label><button type="submit">Save board note</button></form>}
     </section>
   );
 }

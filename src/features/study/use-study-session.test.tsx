@@ -67,6 +67,39 @@ describe("useStudySession", () => {
     expect(result.current.input).toBe("My new question");
     expect(result.current.status).toBe("success");
   });
+
+  it("persists non-demo subject branch, notes, highlights and practice across reload", () => {
+    const base = demoPack({ sessionId: "science", material: { title: "Cell biology", excerpt: "Mitochondria release energy from food. Ribosomes build proteins.", citation: "Biology notes" }, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "What do mitochondria do?", speaker: "rae", demo: true });
+    const pack = { ...base, id: "biology-pack", branches: [{ ...base.branches[0], id: "energy", followUpBranchIds: ["proteins"] }, { ...base.branches[0], id: "proteins", question: "What builds proteins?", sourceQuote: "Ribosomes build proteins.", practice: [{ ...base.branches[0].practice[0], id: "practice-proteins" }], followUpBranchIds: [] }], progress: { branchId: "energy", completedPracticeIds: [] } };
+    const first = renderHook(() => useStudySession(OLD_ENGLISH_DEMO, false));
+    act(() => first.result.current.importPack(pack));
+    act(() => first.result.current.followOfflineBranch("proteins"));
+    act(() => first.result.current.setBoardNotes(["Compare the organelles"]));
+    act(() => first.result.current.setHighlight("Ribosomes build proteins."));
+    act(() => first.result.current.completePractice("practice-proteins"));
+    first.unmount();
+    const second = renderHook(() => useStudySession(OLD_ENGLISH_DEMO, false));
+    expect(second.result.current.activeMaterial.title).toBe("Cell biology");
+    expect(second.result.current.activeMaterial.excerpt).toContain("Mitochondria");
+    expect(second.result.current.activePack?.progress.branchId).toBe("proteins");
+    expect(second.result.current.activePack?.progress.completedPracticeIds).toContain("practice-proteins");
+    expect(second.result.current.boardNotes).toContain("Compare the organelles");
+    expect(second.result.current.highlight).toBe("Ribosomes build proteins.");
+  });
+
+  it("prevents an aborted older request from overwriting a newer request", async () => {
+    let rejectFirst!: (error: Error) => void; let resolveSecond!: (value: unknown) => void; let calls = 0;
+    vi.stubGlobal("fetch", vi.fn(() => { calls += 1; return calls === 1 ? new Promise((_resolve, reject) => { rejectFirst = reject; }) : new Promise((resolve) => { resolveSecond = resolve; }); }));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    act(() => result.current.setInput("Old question")); let old!: Promise<void>; act(() => { old = result.current.submitTurn(); }); act(() => result.current.cancelTurn());
+    act(() => result.current.setInput("New question")); let newer!: Promise<void>; act(() => { newer = result.current.submitTurn(); });
+    expect(result.current.status).toBe("loading");
+    await act(async () => { rejectFirst(Object.assign(new Error("aborted"), { name: "AbortError" })); await old; });
+    expect(result.current.status).toBe("loading");
+    await act(async () => { resolveSecond({ ok: true, json: async () => ({ speaker: "jules", response: "New answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) }); await newer; });
+    expect(result.current.turns.at(-1)?.caption).toBe("New answer");
+    expect(result.current.status).toBe("success");
+  });
 });
 
 function loadSavedPack() { return JSON.parse(localStorage.getItem("study-together.profile.v1") ?? "{}").packs?.[0]?.id; }

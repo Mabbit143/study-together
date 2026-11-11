@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { clearProfile, deleteMemory, deletePack, deleteQueuedQuestion, editMemory, loadProfile, queueQuestion, saveProfile, type OfflineStudyPackV1 } from "./local-store";
 import { replacePeer } from "@/features/preferences/peer-preferences";
-const pack: OfflineStudyPackV1 = { version: 1, id: "one", title: "Topic", excerpt: "Text", branches: [{ id: "b", peerId: "jules", question: "Why?", sourceQuote: "Text", hints: ["Hint"], explanations: ["Explanation"], examples: ["Example"], practice: [{ id: "p", prompt: "Try", answerCheck: "Check" }], followUpBranchIds: [] }], board: { notes: ["note"], selectedTool: "pen" }, progress: { branchId: "b", completedPracticeIds: ["p"] } };
+const pack: OfflineStudyPackV1 = { version: 1, id: "one", title: "Topic", excerpt: "Text", branches: [{ id: "b", peerId: "jules", question: "Why?", sourceQuote: "Text", hints: ["Hint"], explanations: ["Explanation"], examples: ["Example"], practice: [{ id: "p", prompt: "Try", answerCheck: "Check" }], followUpBranchIds: [] }], board: { notes: ["note"], highlights: [], selectedTool: "pen" }, progress: { branchId: "b", completedPracticeIds: ["p"] } };
 describe("local study profile", () => {
  beforeEach(() => localStorage.clear());
  it("round trips complete packs and queues, and retains the last complete pack on incomplete writes", () => {
