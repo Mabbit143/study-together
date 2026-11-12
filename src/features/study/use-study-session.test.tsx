@@ -21,6 +21,30 @@ describe("useStudySession", () => {
     expect(result.current.turns.at(-1)?.peerId).toBe("jules");
   });
 
+  it("uses the explicitly chosen peer and that peer's saved study preferences", async () => {
+    let body: Record<string, unknown> | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (_url, init?: RequestInit) => { body = JSON.parse(String(init?.body)); return { ok: true, json: async () => ({ speaker: "milo", response: "Milo answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) }; }));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    act(() => {
+      result.current.setProfile({ ...result.current.profile!, peers: { ...result.current.profile!.peers, milo: { ...result.current.profile!.peers.milo, voice: "alloy", personality: "straightforward", approach: "example-led" } } });
+      result.current.setActivePeerId("milo"); result.current.setInput("Connect this idea.");
+    });
+    await act(() => result.current.submitTurn());
+    expect(body).toMatchObject({ speaker: "milo", peers: { milo: { voice: "alloy", personality: "straightforward", approach: "example-led" } } });
+    expect(result.current.turns.at(-1)?.peerId).toBe("milo");
+  });
+
+  it("uses the explicitly chosen peer when preparing an offline pack", async () => {
+    let body: Record<string, unknown> | undefined;
+    const pack = demoPack({ sessionId: "demo", material: OLD_ENGLISH_DEMO.material, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Prepare", speaker: "rae", demo: true });
+    vi.stubGlobal("fetch", vi.fn(async (_url, init?: RequestInit) => { body = JSON.parse(String(init?.body)); return { ok: true, json: async () => pack }; }));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    act(() => result.current.setActivePeerId("rae"));
+    await act(() => result.current.preparePack());
+    expect(body).toMatchObject({ speaker: "rae", peers: { rae: defaultPeers.rae } });
+    expect(result.current.activePack?.branches[0].peerId).toBe("rae");
+  });
+
   it("queues offline questions and never sends until explicit approval", async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ speaker: "jules", response: "A grounded answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) });
     vi.stubGlobal("fetch", fetcher);

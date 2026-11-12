@@ -4,10 +4,10 @@ Unchecked items are unverified. Do not turn them into claims without direct read
 
 ## Local release gate
 
-- [x] Unit/component/API tests pass locally: 112/112 on November 11, 2026.
+- [x] Unit/component/API tests pass locally: 116/116 on November 11, 2026.
 - [x] Lint and TypeScript pass locally.
 - [x] Production build passes on Next.js 16.4.6 without network font fetches.
-- [x] Chromium acceptance suite passes locally: 8/8, including both subjects and true offline reload.
+- [x] Chromium acceptance suite passes locally: 10/10, including both subjects and true offline reload.
 - [x] Production dependency audit reports 0 vulnerabilities after the Next.js 16.4.6 security update.
 - [x] Source secret/privacy scan found no key, private learner data, grade, uploaded source file, raw audio, transcript, test trace, screenshot, or video artifact.
 - [x] README, privacy, limitations, credits, story, script, and screenshot list match the locally verified behavior.

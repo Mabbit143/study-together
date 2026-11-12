@@ -51,7 +51,30 @@ test("imports real PDF and DOCX fixtures and requires excerpt confirmation", asy
     await expect(page.getByText(/characters selected/)).not.toHaveText("0 characters selected");
     await page.getByRole("button", { name: "Confirm excerpt" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "old-english" })).toBeVisible();
+    await expect(page.getByText("Sēo cwēn gesihþ þone cyning", { exact: true })).toBeVisible();
   }
+});
+
+test("brings biology through confirmation and returns subject-grounded guidance from the chosen peer", async ({ page }) => {
+  let requestBody: Record<string, unknown> | undefined;
+  await page.route("**/api/study-turn", async (route) => {
+    requestBody = await route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ speaker: "rae", response: "The biology source says ribosomes build proteins from amino acids.", citedExcerpt: "Ribosomes build proteins from amino acids.", boardAction: { type: "highlight", text: "Ribosomes build proteins from amino acids." }, memorySuggestion: null, followUp: null }) });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Bring material" }).click();
+  await page.getByLabel("Or paste text").fill(biologyExcerpt);
+  await page.getByRole("button", { name: "Preview pasted text" }).click();
+  const excerpt = page.getByLabel("Select the text you want to study");
+  await excerpt.focus(); await page.keyboard.press("ControlOrMeta+A");
+  await page.getByRole("button", { name: "Confirm excerpt" }).click();
+  await expect(page.getByText(biologyExcerpt, { exact: true })).toBeVisible();
+  await expect(page.getByText("Sēo cwēn gesihð þone cyning", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Choose Rae for next turn" }).click();
+  await page.getByLabel("Your question").fill("What do ribosomes do?");
+  await page.getByRole("button", { name: "Send to the group" }).click();
+  await expect(page.getByText("The biology source says ribosomes build proteins from amino acids.", { exact: true }).last()).toBeVisible();
+  expect(requestBody).toMatchObject({ speaker: "rae", question: "What do ribosomes do?", material: { title: "Pasted text", excerpt: biologyExcerpt } });
 });
 
 test("keeps two subjects separate and resumes the explicitly selected pack", async ({ page }) => {
@@ -72,32 +95,46 @@ test("keeps two subjects separate and resumes the explicitly selected pack", asy
 });
 
 test("customizes each peer, interrupts a response, and preserves learner memory", async ({ page }) => {
+  const requests: Array<Record<string, unknown>> = [];
   await page.route("**/api/study-turn", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ speaker: "jules", response: "The source supports this explanation.", citedExcerpt: "Sēo cwēn", boardAction: null, memorySuggestion: null, followUp: null }) });
+    const body = await route.request().postDataJSON(); requests.push(body);
+    if (body.question === "Use my newer question instead.") await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ speaker: body.speaker, response: `${body.speaker} used the saved study style.`, citedExcerpt: "Sēo cwēn", boardAction: null, memorySuggestion: null, followUp: null }) });
   });
   await page.goto("/?room=old-english-demo");
-  const settings = page.getByRole("button", { name: "Peer settings" });
-  await expect(settings).toHaveCount(3);
-  for (let index = 0; index < 3; index += 1) {
-    await settings.nth(index).focus(); await page.keyboard.press("Enter");
-    await expect(page.getByRole("combobox", { name: "Voice" })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: "Personality" })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: "Study approach" })).toBeVisible();
-    await page.getByRole("button", { name: "Close settings" }).click();
-  }
   await page.getByLabel("Your question").fill("Explain the verb from the source.");
   await page.getByRole("button", { name: "Practice this later" }).click();
+  const settings = page.getByRole("button", { name: "Peer settings" });
+  await expect(settings).toHaveCount(3);
+  const voices = ["coral", "sage", "alloy"];
+  const personalities = ["straightforward", "playful", "encouraging"];
+  const approaches = ["example-led", "explain-then-practice", "question-led"];
+  for (let index = 0; index < 3; index += 1) {
+    await settings.nth(index).focus(); await page.keyboard.press("Enter");
+    await page.getByRole("combobox", { name: "Voice" }).selectOption(voices[index]);
+    await page.getByRole("combobox", { name: "Personality" }).selectOption(personalities[index]);
+    await page.getByRole("combobox", { name: "Study approach" }).selectOption(approaches[index]);
+    await page.getByRole("button", { name: "Close settings" }).click();
+  }
+  await settings.nth(1).click(); await page.getByRole("button", { name: "Replace peer" }).click(); await page.getByRole("button", { name: "Close settings" }).click();
+  await page.getByRole("button", { name: /Choose Rae \(new\) for next turn/ }).click();
+  await page.getByRole("button", { name: "Send to the group" }).click();
+  await expect(page.getByText("rae used the saved study style.", { exact: true }).last()).toBeVisible();
+  expect(requests[0]).toMatchObject({ speaker: "rae", peers: { rae: { name: "Rae (new)", voice: "coral", personality: "straightforward", approach: "example-led" } } });
+  await page.getByRole("button", { name: "Choose Milo for next turn" }).click();
+  await page.getByLabel("Your question").fill("Use my newer question instead.");
   await page.getByRole("button", { name: "Send to the group" }).click();
   await expect(page.getByRole("button", { name: "Interrupt response" })).toBeVisible();
-  await page.getByLabel("Your question").fill("Use my newer question instead.");
+  await page.getByLabel("Your question").fill("Keep this newest wording.");
   await page.getByRole("button", { name: "Interrupt response" }).click();
-  await expect(page.getByLabel("Your question")).toHaveValue("Use my newer question instead.");
+  await expect(page.getByLabel("Your question")).toHaveValue("Keep this newest wording.");
   const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "null"), profileKey);
   expect(saved.memory.difficult).toHaveLength(1);
+  expect(saved.peers.rae.name).toBe("Rae (new)");
   await page.goto("/");
   await page.getByRole("button", { name: "Continue studying" }).click();
   await expect(page.getByText(/Practice “Explain the verb from the source\.” again/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Rae (new)" })).toBeVisible();
 });
 
 test("downloads a complete offline pack, works offline, and never auto-sends queued questions", async ({ page, context }) => {
@@ -123,6 +160,8 @@ test("downloads a complete offline pack, works offline, and never auto-sends que
   await page.getByLabel("Add board note").fill("Compare mitochondria and ribosomes.");
   await page.getByRole("button", { name: "Save board note" }).click();
   await page.getByRole("button", { name: "Mark practice complete" }).click();
+  await page.getByLabel("Your question").fill("Delete this queued question.");
+  await page.getByRole("button", { name: "Send to the group" }).click();
   await page.getByLabel("Your question").fill("What is not covered by this prepared branch?");
   await page.getByRole("button", { name: "Send to the group" }).click();
   await expect(page.getByText("What is not covered by this prepared branch?", { exact: true })).toBeVisible();
@@ -135,8 +174,12 @@ test("downloads a complete offline pack, works offline, and never auto-sends que
   await expect(page.getByRole("heading", { name: "Cell biology study group" })).toBeVisible();
   await expect(page.getByText("Compare mitochondria and ribosomes.", { exact: true })).toBeVisible();
   await expect(page.getByText("Ribosomes build proteins from amino acids", { exact: false }).last()).toBeVisible();
+  await expect(page.getByText("Practice complete for this prepared branch.", { exact: true })).toBeVisible();
   await context.setOffline(false);
   await expect(page.getByText("Online", { exact: true })).toBeVisible();
+  const deleteItem = page.getByRole("listitem").filter({ hasText: "Delete this queued question." });
+  await deleteItem.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByText("Delete this queued question.", { exact: true })).toHaveCount(0);
   await expect(page.getByText("What is not covered by this prepared branch?", { exact: true })).toBeVisible();
   await page.route("**/api/study-turn", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ speaker: "rae", response: "The prepared source does not cover that question.", citedExcerpt: null, boardAction: null, memorySuggestion: null, followUp: null }) }));
   await page.getByRole("button", { name: "Send now" }).click();
@@ -156,9 +199,11 @@ test("provider outage preserves input and offers the deterministic grounded demo
   await expect(page.getByText(/Demo response shown/i)).toBeVisible();
 });
 
-test("offline without a pack keeps deterministic source tools and queues nothing automatically", async ({ page }) => {
+test("offline without a pack survives a real service-worker reload and keeps deterministic tools", async ({ page, context }) => {
   await page.goto("/?room=old-english-demo");
-  await page.getByRole("button", { name: "Simulate going offline" }).click();
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await page.reload(); await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await context.setOffline(true); await page.reload();
   await expect(page.locator(".offline-label")).toContainText("Offline without a prepared pack");
   await page.getByLabel("Search confirmed excerpt").fill("cwēn");
   await expect(page.getByRole("button", { name: /Highlight on whiteboard:.*cwēn/i })).toBeVisible();
@@ -166,4 +211,5 @@ test("offline without a pack keeps deterministic source tools and queues nothing
   await page.getByRole("button", { name: "Save board note" }).click();
   await expect(page.getByText("My local note", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Prepare offline study pack" })).toBeDisabled();
+  await context.setOffline(false);
 });

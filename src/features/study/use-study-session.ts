@@ -19,6 +19,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   const [online, setOnlineState] = useState(initialConnection);
   const [input, setInput] = useState("");
   const [turns, setTurns] = useState(session.turns);
+  const [activePeerId, setActivePeerId] = useState<PeerId>("jules");
   const [status, setStatus] = useState<SessionStatus>(initialConnection ? "success" : initialPack ? "offline-pack" : "offline-no-pack");
   const [boardNotes, setBoardNotes] = useState(initialPack?.board.notes ?? session.board.notes);
   const [highlights, setHighlights] = useState(initialPack?.board.highlights ?? []);
@@ -40,7 +41,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   }, [activePack]);
   const persist = useCallback((next: NonNullable<typeof profile>) => { setProfile(next); saveProfile(next); }, []);
   function setOnline(value: boolean) { setOnlineState(value); setStatus(value ? "success" : activePack ? "offline-pack" : "offline-no-pack"); }
-  const requestBody = (question: string, demo: boolean) => ({ sessionId: session.id, material: activeMaterial, peers: profile?.peers ?? defaultPeers, recentTurns: turns.slice(-12), selectedMemories: [...(profile?.memory.helpful ?? []), ...(profile?.memory.difficult ?? [])], question, speaker: "jules" as PeerId, demo });
+  const requestBody = (question: string, demo: boolean) => ({ sessionId: session.id, material: activeMaterial, peers: profile?.peers ?? defaultPeers, recentTurns: turns.slice(-12), selectedMemories: [...(profile?.memory.helpful ?? []), ...(profile?.memory.difficult ?? [])], question, speaker: activePeerId, demo });
   async function runTurn(question: string, demo = false) {
     setStatus("loading"); const controller = new AbortController(); activeRequest.current = controller;
     try {
@@ -83,7 +84,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   function selectPack(id: string) { const pack = profile?.packs.find((item) => item.id === id); if (!pack || !profile) return; persist({ ...profile, activePackId: id }); setActivePack(pack); setBoardNotes(pack.board.notes); setHighlights(pack.board.highlights); setSelectedToolState(pack.board.selectedTool); setStatus(online ? "success" : "offline-pack"); }
   function followOfflineBranch(id: string) { updatePack((pack) => followBranch(pack, id)); }
   function completePractice(id: string) { updatePack((pack) => ({ ...pack, progress: { ...pack.progress, completedPracticeIds: [...new Set([...pack.progress.completedPracticeIds, id])] } })); }
-  return { session, activeMaterial, profile, online, setOnline, input, setInput, turns, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, highlights, highlight, setHighlight, selectedTool, setSelectedTool, activePack, importPack, selectPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile: persist };
+  return { session, activeMaterial, profile, online, setOnline, input, setInput, turns, activePeerId, setActivePeerId, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, highlights, highlight, setHighlight, selectedTool, setSelectedTool, activePack, importPack, selectPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile: persist };
 }
 
 export type StudySessionController = ReturnType<typeof useStudySession>;
