@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OLD_ENGLISH_DEMO } from "@/features/study/demo-session";
 import { StudyExperience } from "./study-experience";
@@ -12,6 +12,7 @@ import { defaultPeers } from "@/features/preferences/peer-preferences";
 import { loadProfile, saveProfile } from "@/features/storage/local-store";
 
 function ExperienceHarness({ online = true }: { online?: boolean }) { return <StudyExperience study={useStudySession(OLD_ENGLISH_DEMO, online)} />; }
+function SameTitleSpeechHarness() { const study = useStudySession(OLD_ENGLISH_DEMO); return <><button type="button" onClick={() => study.activateMaterial({ title: OLD_ENGLISH_DEMO.material.title, excerpt: "A different source with the same title.", citation: "Different source" })}>Switch same-title material</button><StudyExperience study={study} /></>; }
 
 describe("StudyExperience", () => {
   beforeEach(() => { localStorage.clear(); vi.stubGlobal("fetch", vi.fn()); });
@@ -67,6 +68,21 @@ describe("StudyExperience", () => {
     const { unmount } = render(<ExperienceHarness />); fireEvent.click(screen.getByRole("button", { name: /play ai voice/i })); unmount();
     resolve({ ok: true, blob: async () => new Blob(["late"]) }); await Promise.resolve(); await Promise.resolve();
     expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("invalidates deferred speech when peer selection changes", async () => {
+    let resolve!: (value: unknown) => void; vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; }))); const createObjectURL = vi.fn(() => "blob:stale-peer"); Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    render(<ExperienceHarness />); fireEvent.click(screen.getByRole("button", { name: /play ai voice/i })); fireEvent.click(screen.getByRole("button", { name: /choose rae for next turn/i })); await act(async () => { resolve({ ok: true, blob: async () => new Blob(["late"]) }); await Promise.resolve(); await Promise.resolve(); }); expect(createObjectURL).not.toHaveBeenCalled(); expect(screen.queryByLabelText(/optional ai voice playback/i)).not.toBeInTheDocument();
+  });
+
+  it("invalidates deferred speech when the responding peer voice changes", async () => {
+    let resolve!: (value: unknown) => void; vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; }))); const createObjectURL = vi.fn(() => "blob:stale-voice"); Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    render(<ExperienceHarness />); fireEvent.click(screen.getByRole("button", { name: /play ai voice/i })); fireEvent.click(screen.getAllByRole("button", { name: /peer settings/i })[0]); fireEvent.change(screen.getByRole("combobox", { name: "Voice" }), { target: { value: "coral" } }); await act(async () => { resolve({ ok: true, blob: async () => new Blob(["late"]) }); await Promise.resolve(); await Promise.resolve(); }); expect(createObjectURL).not.toHaveBeenCalled(); expect(screen.queryByLabelText(/optional ai voice playback/i)).not.toBeInTheDocument();
+  });
+
+  it("invalidates deferred speech across a same-title material identity change", async () => {
+    let resolve!: (value: unknown) => void; vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; }))); const createObjectURL = vi.fn(() => "blob:stale-subject"); Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    render(<SameTitleSpeechHarness />); fireEvent.click(screen.getByRole("button", { name: /play ai voice/i })); fireEvent.click(screen.getByRole("button", { name: /switch same-title material/i })); await act(async () => { resolve({ ok: true, blob: async () => new Blob(["late"]) }); await Promise.resolve(); await Promise.resolve(); }); expect(createObjectURL).not.toHaveBeenCalled(); expect(screen.queryByLabelText(/optional ai voice playback/i)).not.toBeInTheDocument();
   });
 
   it("renders the peer answer once with a consistent uncertain label", () => {

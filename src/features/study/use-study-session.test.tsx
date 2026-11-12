@@ -164,6 +164,26 @@ describe("useStudySession", () => {
     expect(result.current.input).toBe("Newer draft");
   });
 
+  it("invalidates a delayed turn before switching to a different material", async () => {
+    let resolve!: (value: unknown) => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; })));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    act(() => result.current.setInput("Old subject question")); let pending!: Promise<void>; act(() => { pending = result.current.submitTurn(); });
+    act(() => { result.current.activateMaterial({ title: "Biology", excerpt: "Cells contain DNA.", citation: "Science notes" }); result.current.setInput("New biology draft"); });
+    await act(async () => { resolve({ ok: true, json: async () => ({ speaker: "jules", response: "Late old answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: { type: "add-note", text: "Late old note" }, memorySuggestion: null, followUp: null }) }); await pending; });
+    expect(result.current.activeMaterial.title).toBe("Biology"); expect(result.current.turns).toEqual([]); expect(result.current.highlights).toEqual([]); expect(result.current.boardNotes).toEqual([]); expect(result.current.currentQuestion).toBe(""); expect(result.current.input).toBe("New biology draft");
+  });
+
+  it("invalidates a delayed turn across same-title packs with different identities", async () => {
+    const first = { ...demoPack({ sessionId: "one", material: { title: "Shared title", excerpt: "First source sentence.", citation: "First" }, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "First", speaker: "jules", demo: true }), id: "same-title-one" };
+    const second = { ...demoPack({ sessionId: "two", material: { title: "Shared title", excerpt: "Second source sentence.", citation: "Second" }, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Second", speaker: "rae", demo: true }), id: "same-title-two" };
+    let resolve!: (value: unknown) => void; vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; })));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); act(() => { result.current.importPack(first); result.current.importPack(second); result.current.selectPack(first.id); result.current.setInput("Question for first"); });
+    let pending!: Promise<void>; act(() => { pending = result.current.submitTurn(); }); act(() => { result.current.selectPack(second.id); result.current.setInput("Draft for second"); });
+    await act(async () => { resolve({ ok: true, json: async () => ({ speaker: "jules", response: "Late first answer", supportStatus: "supported", citedExcerpt: "First source sentence.", boardAction: { type: "add-note", text: "Late first note" }, memorySuggestion: null, followUp: null }) }); await pending; });
+    expect(result.current.activePack?.id).toBe(second.id); expect(result.current.activeMaterial.excerpt).toBe(second.excerpt); expect(result.current.turns).toEqual([]); expect(result.current.highlights).toEqual(second.board.highlights); expect(result.current.boardNotes).toEqual(second.board.notes); expect(result.current.currentQuestion).toBe(""); expect(result.current.input).toBe("Draft for second");
+  });
+
   it("merges preparation with latest board state and can cancel it", async () => {
     let resolve!: (value: unknown) => void;
     const pack = demoPack({ sessionId: "demo", material: OLD_ENGLISH_DEMO.material, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Prepare", speaker: "jules", demo: true });
@@ -176,6 +196,20 @@ describe("useStudySession", () => {
     expect(result.current.activePack?.board.selectedTool).toBe("sticky");
     let cancelled!: Promise<void>; act(() => { cancelled = result.current.preparePack(); }); act(() => result.current.cancelTurn()); await act(() => cancelled);
     expect(result.current.status).toBe("success");
+  });
+
+  it("invalidates delayed pack preparation across material and same-title pack switches", async () => {
+    const generated = demoPack({ sessionId: "late", material: OLD_ENGLISH_DEMO.material, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Late", speaker: "jules", demo: true });
+    const resolves: Array<(value: unknown) => void> = []; vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolves.push(done); })));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    let firstPending!: Promise<void>; act(() => { firstPending = result.current.preparePack(); }); act(() => result.current.activateMaterial({ title: "Biology", excerpt: "Cells contain DNA.", citation: "Science" }));
+    await act(async () => { resolves.shift()!({ ok: true, json: async () => generated }); await firstPending; });
+    expect(result.current.activeMaterial.title).toBe("Biology"); expect(result.current.activePack).toBeNull(); expect(result.current.status).toBe("success"); expect(result.current.profile?.packs.some((pack) => pack.id === generated.id)).toBe(false);
+    const current = { ...demoPack({ sessionId: "current", material: { title: "Shared title", excerpt: "Current identity source.", citation: "Current" }, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Current", speaker: "rae", demo: true }), id: "current-same-title" };
+    act(() => result.current.importPack(current)); let secondPending!: Promise<void>; act(() => { secondPending = result.current.preparePack(); });
+    const replacement = { ...current, id: "replacement-same-title", excerpt: "Replacement identity source.", branches: current.branches.map((branch) => ({ ...branch, sourceQuote: "Replacement identity source." })) };
+    act(() => result.current.importPack(replacement)); await act(async () => { resolves.shift()!({ ok: true, json: async () => generated }); await secondPending; });
+    expect(result.current.activePack?.id).toBe(replacement.id); expect(result.current.activeMaterial.excerpt).toBe(replacement.excerpt); expect(result.current.profile?.packs.some((pack) => pack.id === generated.id)).toBe(false); expect(result.current.status).toBe("success");
   });
 
   it("shows unsaved state when pack persistence fails while preserving visible work", () => {

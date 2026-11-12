@@ -1,7 +1,7 @@
 # Residual repair report
 
-Date: November 12, 2026  
-Base: `1b8f2bc`  
+Date: November 12, 2026
+Base: `1b8f2bc`
 Scope: final scoped re-review residuals only
 
 ## Findings and resolutions
@@ -30,3 +30,24 @@ Scope: final scoped re-review residuals only
 ## Remaining gates
 
 No listed residual implementation issue remains. External/account-authorized gates are unchanged: live-provider quality verification, provider hard spending limits/alerts, deployment, walkthrough media, Devpost submission/read-back, and publication.
+
+## Round 2 — cross-subject lifecycle invalidation
+
+The independent review found three remaining identity transitions. A shared context epoch now invalidates and aborts both pending turns and pending pack preparation before any material or pack transition, including same-title sources with different stable identities. Late old-subject results cannot alter the new subject, board, draft, pack, or status.
+
+Optional speech identity now includes the stable subject identity, active turn, responding and selected peer identities, names, and voices. New turns, subject/pack changes, peer selection or replacement, voice changes, stop, and unmount invalidate pending speech before an object URL can be created.
+
+Focused verification:
+
+- `npm.cmd test -- src/features/study/use-study-session.test.tsx src/components/study/study-flow.test.tsx`: 30/30 passed.
+- Tests cover delayed turns and preparation across different-title and same-title/different-identity subject switches, plus deferred speech across peer, voice, and same-title subject changes.
+
+Final verification:
+
+- Full unit/component/API suite: 132/132 passed across 27 files.
+- ESLint and TypeScript passed.
+- Next.js 16.4.6 production build passed; 8/8 pages generated.
+- Production Chromium Playwright passed 10/10.
+- Production audit found 0 vulnerabilities.
+- Secret/private-key/content-log scan found no matches.
+- `git diff --check` passed; only informational Windows LF-to-CRLF warnings were emitted.
