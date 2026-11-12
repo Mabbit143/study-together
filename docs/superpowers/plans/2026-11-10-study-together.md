@@ -8,6 +8,8 @@
 
 **Tech Stack:** Node.js 22 LTS; Next.js 16.3; React 19; TypeScript; Tailwind; Zod; OpenAI JavaScript SDK; `pdfjs-dist`; `mammoth`; Vitest + Testing Library; Playwright + Axe.
 
+**Release amendment (2026-11-12):** Security verification moved the release to exact Next.js 16.4.6. New transcription work uses current `gpt-transcribe`; the earlier Task 5 model name below records the original plan, not the shipped configuration.
+
 **Spec:** `docs/superpowers/specs/2026-11-10-study-together-design.md`
 
 ## Global Constraints
@@ -19,6 +21,8 @@
 - Supported answers visibly cite the supplied excerpt; unsupported/general-knowledge content is labeled.
 - Jules facilitates, Rae checks sources, and Milo makes connections; all are labeled as AI.
 - Peer changes preserve inspectable, editable, deletable study memory.
+- No local AI model is installed; offline study uses a versioned AI-prepared text pack plus deterministic local tools.
+- Queued offline questions are inspectable/deletable and require explicit confirmation before sending after reconnection.
 - Live routes validate inputs, exclude content from logs, rate-limit anonymous sessions, and preserve input on failure.
 
 ## Review Focus
@@ -28,6 +32,7 @@
 - Provider timeout, quota, missing-key, and malformed-output failures preserve input and offer retry/demo mode (Tasks 4–5).
 - Denied microphone permission and absent `MediaRecorder` retain the full typed flow (Tasks 5 and 7).
 - Corrupt or older local storage resets safely with a visible notice and no startup crash (Task 3).
+- Connection loss during pack generation or queued-question sync cannot corrupt the last complete pack or silently send an outbox item (Tasks 4, 6, and 7).
 
 ---
 
@@ -75,9 +80,9 @@
 - Test: storage, peer-settings, and memory-manager tests beside those modules.
 
 **Interfaces:**
-- Produces: `VoiceId = "alloy" | "coral" | "sage"`; `Personality = "encouraging" | "straightforward" | "playful"`; `StudyApproach = "question-led" | "example-led" | "explain-then-practice"`; `PeerPreferences`; `StudyMemory`; `StudyProfileV1`; `loadProfile`, `saveProfile`, `deleteMemory`, `clearProfile`.
+- Produces: `VoiceId = "alloy" | "coral" | "sage"`; `Personality = "encouraging" | "straightforward" | "playful"`; `StudyApproach = "question-led" | "example-led" | "explain-then-practice"`; `PeerPreferences`; `StudyMemory`; `OfflineStudyPackV1`; `QueuedQuestion`; `StudyProfileV1`; `loadProfile`, `saveProfile`, `deleteMemory`, `deletePack`, `queueQuestion`, `deleteQueuedQuestion`, `clearProfile`.
 
-- [ ] **Step 1: Write failing tests** — Settings change independently; replacement changes identity/defaults but preserves memory; helpful/difficult items round-trip; individual/all deletion works; corrupt/unknown storage shows reset notice.
+- [ ] **Step 1: Write failing tests** — Settings change independently; replacement preserves memory; helpful/difficult items, a complete offline pack, and queued questions round-trip; pack/question deletion and clear-all work; incomplete pack writes never replace the last complete pack; corrupt/unknown storage shows reset notice.
 - [ ] **Step 2: Confirm failure** — Run the three focused test files.
 - [ ] **Step 3: Implement versioned local storage and UI** — Use `study-together.profile.v1`; never store original files/audio; present `Bring material` and `Continue studying` equally.
 - [ ] **Step 4: Verify keyboard behavior** — Open, change, reset, and close settings without a pointer; focused tests pass.
@@ -92,12 +97,12 @@
 
 **Interfaces:**
 - Consumes: confirmed material, peer preferences, recent turns, and selected memories.
-- Produces: `StudyTurnRequest`; `StudyTurnResponse { speaker, response, supportStatus, citedExcerpt, boardAction, memorySuggestion, followUp? }`; `POST /api/study-turn`; safe error `{ code, message, canRetry, demoAvailable }`.
+- Produces: `StudyTurnRequest`; `StudyTurnResponse { speaker, response, supportStatus, citedExcerpt, boardAction, memorySuggestion, followUp? }`; `OfflinePackRequest`; `OfflineStudyPackV1` containing grounded peer branches, hints, explanations, examples, practice items, and answer checks; `POST /api/study-turn`; `POST /api/offline-pack`; safe error `{ code, message, canRetry, demoAvailable }`.
 
-- [ ] **Step 1: Add the OpenAI SDK and write failing contract tests** — Only confirmed excerpt/selected memories enter prompts; coach-first behavior follows approach; supported claims require a verbatim excerpt; follow-up is optional and non-duplicative.
-- [ ] **Step 2: Write failure tests** — Missing key, timeout, quota, network, invalid structured output, oversized request, rate excess, and prompt injection in source all return safe recovery with no content logs.
+- [ ] **Step 1: Add the OpenAI SDK and write failing contract tests** — Only confirmed excerpt/selected memories enter prompts; coach-first behavior follows approach; supported claims require a verbatim excerpt; follow-up is optional and non-duplicative; offline packs are versioned, finite, grounded, and contain no network-only references.
+- [ ] **Step 2: Write failure tests** — Missing key, timeout, connection loss, quota, invalid structured output, oversized request, rate excess, and prompt injection in source all return safe recovery with no content logs; partial generation never returns a storable pack.
 - [ ] **Step 3: Confirm failure** — Run `npm test -- src/features/ai src/app/api/study-turn/route.test.ts`.
-- [ ] **Step 4: Implement** — Use Responses API structured output, `OPENAI_TEXT_MODEL` default `gpt-5-mini`, 20-second timeout, 30 turns/session/hour, and deterministic demo through the same schema.
+- [ ] **Step 4: Implement** — Use Responses API Structured Outputs through `text.format`, `OPENAI_TEXT_MODEL` default `gpt-6-luna`, 20-second timeout, 30 turns/session/hour, and deterministic demo through the same schema.
 - [ ] **Step 5: Verify** — Run focused tests and build; logs contain no passages/transcripts.
 - [ ] **Step 6: Commit** — `git add . && git commit -m "feat: add grounded peer response engine"`.
 
@@ -118,19 +123,19 @@
 - [ ] **Step 5: Verify** — Focused tests and build pass; API key is absent from client bundles.
 - [ ] **Step 6: Commit** — `git add . && git commit -m "feat: add accessible turn-based voice"`.
 
-### Task 6: Integrated study loop and accessibility
+### Task 6: Integrated study loop, offline static chat, and accessibility
 
 **Files:**
-- Create: `src/features/study/use-study-session.ts`, `src/components/study/{turn-composer,session-status}.tsx`
+- Create: `src/features/study/use-study-session.ts`, `src/features/offline/{pack-runner,connection-sync,service-worker}.ts`, `src/components/study/{turn-composer,session-status}.tsx`, `src/components/offline/{prepare-pack,offline-status,outbox}.tsx`
 - Modify: page, room, whiteboard, and peer-list components.
 - Test: `src/features/study/use-study-session.test.tsx`, `src/components/study/study-flow.test.tsx`
 
 **Interfaces:**
-- Produces: `useStudySession()` as the only orchestration boundary for material, input, responses, fallback, board actions, memory proposals, and retry.
+- Produces: `useStudySession()` as the only orchestration boundary for material, input, live responses, offline-pack branches, fallback, board actions, memory proposals, outbox confirmation, and retry.
 
-- [ ] **Step 1: Write failing flow tests** — Sample/import start; typed/transcribed turn; transcript edit; one speaker; source highlight; note edit; another example; retry/demo fallback; helpful/difficult save; peer replacement; return suggestion.
+- [ ] **Step 1: Write failing flow tests** — Sample/import start; typed/transcribed turn; transcript edit; one speaker; source highlight; note edit; another example; retry/demo fallback; helpful/difficult save; peer replacement; return suggestion; prepare pack; lose connection; traverse static chat; use local search/highlight/notes; queue an uncovered question; reconnect; explicitly approve or delete queued send.
 - [ ] **Step 2: Confirm failure** — Run both focused tests.
-- [ ] **Step 3: Implement orchestration/states** — Preserve user input until success/discard; expose loading, empty, success, offline, rate-limit, provider-error, and demo states.
+- [ ] **Step 3: Implement orchestration/states** — Preserve input until success/discard; cache the app shell with a service worker; expose loading, empty, success, offline-pack, offline-no-pack, waiting-for-connection, rate-limit, provider-error, and demo states; never auto-send outbox items.
 - [ ] **Step 4: Add accessibility assertions** — No serious Axe violations; logical tabs; visible focus; correct labels/live regions; reduced motion; usable at 320px and 200% zoom.
 - [ ] **Step 5: Verify** — Run `npm test`, lint, and build; all pass.
 - [ ] **Step 6: Commit** — `git add . && git commit -m "feat: complete grounded study session flow"`.
@@ -146,9 +151,9 @@
 **Interfaces:**
 - Produces: reproducible setup, privacy/limitations/credits, verified deployment record, Devpost copy, screenshot list, and captioned walkthrough script.
 
-- [ ] **Step 1: Write failing Playwright acceptance tests** — Cover all seven design success criteria plus Unicode, denied mic, provider outage, keyboard-only settings, memory return, 320px layout, and Axe.
+- [ ] **Step 1: Write failing Playwright acceptance tests** — Cover all eight design success criteria plus Unicode, denied mic, provider outage, keyboard-only settings, memory return, 320px layout, Axe, cached app reload offline, static-chat pack use, deterministic no-pack tools, and explicit outbox send/delete after reconnection.
 - [ ] **Step 2: Confirm gaps** — Run `npx playwright test`.
-- [ ] **Step 3: Write public documentation/disclosures** — Document setup, environment, limits, data flow, memory controls, synthetic data, AI assistance, dependencies, pre-existing mockup, scanned-PDF limitation, and no outcome claims.
+- [ ] **Step 3: Write public documentation/disclosures** — Document setup, environment, limits, online/offline data flow, study-pack and outbox controls, synthetic data, AI assistance, dependencies, pre-existing mockup, scanned-PDF limitation, no local AI model, and no outcome claims.
 - [ ] **Step 4: Create submission assets** — Devpost story addresses all four criteria; screenshot list and 2–3 minute captioned script show barrier, before/after, import, grounded turn, board, peer change, memory, limitations, and credits.
 - [ ] **Step 5: Verify release candidate** — Run unit tests, lint, build, Playwright, and `npm audit --omit=dev`; no unresolved high/critical production finding without written rationale.
 - [ ] **Step 6: Review secrets/history** — Confirm no keys, private learner data, grades, uploaded files, or raw audio; only `.env.example` is tracked.

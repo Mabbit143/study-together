@@ -1,0 +1,1 @@
+export function PreparePack({ onPrepare, disabled }: { onPrepare(): void; disabled?: boolean }) { return <section><button type="button" disabled={disabled} onClick={onPrepare}>Prepare offline study pack</button><p>Download a grounded set of precomputed paths while online. Prepared offline study is not live AI.</p></section>; }

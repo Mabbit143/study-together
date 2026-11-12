@@ -14,6 +14,7 @@ The before-and-after is concrete: a student with an unusual schedule and uncommo
 - Keep three distinct peers familiar across sessions while allowing individual customization or replacement.
 - Preserve study history and difficult-topic memory when peers change.
 - Let a learner bring new material or continue from a suggested prior topic.
+- Let a learner prepare a text-based study pack while connected and continue a useful static-chat session after connectivity drops.
 - Ground discussion in the learner-confirmed excerpt and show it on a shared whiteboard.
 - Support keyboard operation, readable contrast, captions, plain controls, and responsive layouts.
 
@@ -22,6 +23,7 @@ The before-and-after is concrete: a student with an unusual schedule and uncommo
 - No human matching, scheduling, messaging, accounts, cross-device sync, or production database.
 - No simultaneous free-flowing audio, automatic grading, assignment completion, plagiarism assistance, or outcome claims.
 - No web research in v1 and no image-only document support; unsupported documents get recovery guidance.
+- No local language model download or on-device generative inference; it is too large and RAM-intensive for the intended devices.
 - Do not build a generic chatbot with three names, a passive summarizer, or peers that invent unsupported facts.
 - Do not require a microphone, login, OpenAI account, or personal student data to evaluate the demo.
 - Do not hide that peers are AI or retain course files without consent.
@@ -61,11 +63,21 @@ The same group returns by default. Per peer, the learner can change voice, perso
 
 Compact local memory includes studied topics, learner-marked difficulties, helpful explanations, and suggested practice. Learners can inspect, edit, delete individual memories, or clear all data. Revisiting a topic is always a suggestion, never a silent direction change.
 
+### Offline static chat
+
+While connected, the learner can choose **Prepare for offline study** after confirming an excerpt. The AI creates a compact study pack containing peer-led questions, hints, explanations, examples, practice items, answer checks, and likely follow-up branches grounded in that excerpt. The browser saves the pack, excerpt, board state, and progress locally; it does not download or run a local AI model.
+
+Offline, the room switches to a clearly labeled **Offline study pack** state. The learner can traverse the prepared text discussion, reveal hints, compare explanations, answer prompts, search the saved excerpt, highlight, and edit notes. A question not covered by the pack is saved to an outbox as **Waiting for connection**. On reconnection, the learner explicitly approves or deletes each queued question; nothing uploads silently.
+
+Without a prepared pack, the offline fallback still provides the saved excerpt, search, highlighting, notes, learner-authored flashcards, and deterministic self-explanation prompts. Learners can inspect and delete downloaded packs and queued questions with the same local-data controls used for study memory.
+
 ## Technical approach
 
 Build a small Next.js/TypeScript/Tailwind app on Vercel. Parse PDF and DOCX in the browser, store preferences/history locally, and keep provider keys in server routes.
 
 Voice is turn-based: audio capture → speech-to-text → transcript confirmation → grounded peer response → optional text-to-speech. Typed input and silent captions are complete alternatives. Structured responses include active speaker, response, board action, cited excerpt, memory suggestion, and optional follow-up.
+
+Offline packs use a separate structured server response and a versioned local schema. A service worker caches the application shell and static assets after the first successful visit. Pack generation is an explicit connected action; cached packs and the outbox remain scoped to the current browser profile.
 
 Live OpenAI transcription, grounded responses, and optional speech use the entrant’s approved API budget. The included Old English scenario remains interactive through the same response contract when the provider is unavailable and is clearly labeled demo mode. Live failures preserve input and offer retry or demo mode. Per-session limits and rate protection prevent uncontrolled judging spend.
 
@@ -96,6 +108,7 @@ A judge without an account can:
 5. Change or replace one peer without losing progress.
 6. Mark a difficulty, return later, and receive an optional continuation suggestion.
 7. Review/delete memory and complete the whole flow with a keyboard.
+8. Prepare a pack while connected, reload without a network, complete a static-chat practice branch, and queue an uncovered question without data loss.
 
 ## Constraints and assumptions
 
