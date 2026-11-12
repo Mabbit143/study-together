@@ -8,6 +8,8 @@ type WhiteboardProps = {
   board: BoardState;
   onNotesChange?: (notes: string[]) => void;
   onSelectedToolChange?: (tool: BoardState["selectedTool"]) => void;
+  onClear?: () => void;
+  currentTask?: string;
 };
 
 const tools = [
@@ -16,9 +18,10 @@ const tools = [
   { id: "sticky", label: "Sticky note" },
 ] as const;
 
-export function Whiteboard({ board, onNotesChange, onSelectedToolChange }: WhiteboardProps) {
+export function Whiteboard({ board, onNotesChange, onSelectedToolChange, onClear, currentTask }: WhiteboardProps) {
   const [selectedTool, setSelectedTool] = useState(board.selectedTool);
   const [notes, setNotes] = useState(board.notes);
+  const [confirmClear, setConfirmClear] = useState(false);
   const visibleNotes = onNotesChange ? board.notes : notes;
   const visibleTool = onSelectedToolChange ? board.selectedTool : selectedTool;
 
@@ -41,12 +44,13 @@ export function Whiteboard({ board, onNotesChange, onSelectedToolChange }: White
               {tool.label}
             </button>
           ))}
-          <button className="tool-button danger" onClick={() => { setNotes([]); onNotesChange?.([]); }} type="button">
-            Clear board
+          <button className="tool-button danger" onClick={() => { if (onClear && !confirmClear) { setConfirmClear(true); return; } setNotes([]); onNotesChange?.([]); onClear?.(); setConfirmClear(false); }} type="button">
+            {confirmClear ? "Confirm clear board" : "Clear board"}
           </button>
         </div>
       </div>
       {board.highlights?.length ? <div aria-label="Grounded source highlights"><h3>Grounded highlights</h3>{board.highlights.map((value) => <mark key={value}>{value}</mark>)}</div> : null}
+      {currentTask ? <div aria-label="Current study task"><h3>Current question</h3><p>{currentTask}</p></div> : null}
       <div className="board-surface">
         {visibleNotes.length > 0 ? (
           visibleNotes.map((note) => (

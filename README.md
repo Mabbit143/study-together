@@ -17,7 +17,7 @@ The public prototype requires no account. The included Old English sample is syn
 
 ## Local setup
 
-Requirements: Node.js 22+, npm 11+, and a current Chromium-based browser.
+Requirements: Node.js 22.13+ (or 24.15+), npm 11+, and a current Chromium-based browser.
 
 ```powershell
 npm install --ignore-scripts
@@ -49,7 +49,7 @@ Never place real values in `.env.example` or client code. The temporary speech a
 ## Data flow
 
 - File parsing happens in the browser. Uploaded files are not retained by this app.
-- Only the learner-confirmed excerpt, current question, selected peer settings, recent turns, and selected local memories are sent to live server routes.
+- Only the learner-confirmed excerpt, current question, selected peer settings, bounded recent turns, and bounded memories scoped to the current subject are sent to live server routes. OpenAI API storage is disabled for generation and grounding verification.
 - Server logs intentionally omit excerpts, transcripts, speech text, raw audio, and secrets.
 - Preferences, memory, prepared packs, whiteboard state, and queued questions stay in browser local storage until the learner deletes them.
 - Prepared offline study is precomputed text, not a local AI model. Free-form offline questions wait for explicit approval after reconnection.

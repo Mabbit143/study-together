@@ -10,9 +10,10 @@ export const packSchema = z.object({ version: z.literal(1), id: text, title: tex
  if (branchIds.size !== pack.branches.length || !branchIds.has(pack.progress.branchId) || pack.branches.some(branch => !pack.excerpt.includes(branch.sourceQuote) || branch.followUpBranchIds.some(id => !branchIds.has(id)))) ctx.addIssue({ code: "custom", message: "Pack branches must be grounded and connected." });
  const practiceIds = pack.branches.flatMap(branch => branch.practice.map(item => item.id));
  if (new Set(practiceIds).size !== practiceIds.length || pack.progress.completedPracticeIds.some(id => !practiceIds.includes(id))) ctx.addIssue({ code: "custom", message: "Pack progress must refer to practice items." });
+ if (pack.board.highlights.some(value => !pack.excerpt.includes(value))) ctx.addIssue({ code: "custom", message: "Pack highlights must quote the confirmed excerpt." });
 });
-const questionSchema = z.object({ id: text, text }).strip();
-const memoryItem = z.object({ id: text, text }).strip();
+const questionSchema = z.object({ id: text, text, packId: z.string().nullable().optional(), materialTitle: z.string().optional() }).strip();
+const memoryItem = z.object({ id: text, text, subjectTitle: z.string().optional() }).strip();
 const profileSchema = z.object({ version: z.literal(1), peers: z.object({ jules: peerSchema, rae: peerSchema, milo: peerSchema }).strip(), memory: z.object({ helpful: z.array(memoryItem), difficult: z.array(memoryItem) }).strip(), packs: z.array(packSchema), activePackId: z.string().nullable().default(null), queuedQuestions: z.array(questionSchema) }).strip().superRefine((profile, ctx) => { if (profile.activePackId && !profile.packs.some((pack) => pack.id === profile.activePackId)) ctx.addIssue({ code: "custom", message: "Active pack must exist." }); });
 const legacySchema = z.object({ version: z.literal(1), peer: peerSchema, memory: z.object({ helpful: z.array(z.string()), difficult: z.array(z.string()) }), packs: z.array(z.unknown()).length(0), queuedQuestions: z.array(questionSchema) });
 export type OfflineStudyPackV1 = z.infer<typeof packSchema>;
@@ -23,14 +24,15 @@ export function loadProfile(): { profile: StudyProfileV1; resetNotice: string | 
  try {
   const raw = localStorage.getItem(key); if (!raw) return { profile: emptyProfile(), resetNotice: null };
   const data: unknown = JSON.parse(raw); const parsed = profileSchema.safeParse(data); if (parsed.success) return { profile: parsed.data, resetNotice: null };
-  const old = legacySchema.safeParse(data); if (old.success) { const p = emptyProfile(); p.peers.jules = old.data.peer; p.memory = { helpful: old.data.memory.helpful.map((value, i) => ({ id: `legacy-helpful-${i}`, text: value })), difficult: old.data.memory.difficult.map((value, i) => ({ id: `legacy-difficult-${i}`, text: value })) }; p.queuedQuestions = old.data.queuedQuestions; const migrated = profileSchema.parse(p); localStorage.setItem(key, JSON.stringify(migrated)); return { profile: migrated, resetNotice: null }; }
+  const old = legacySchema.safeParse(data); if (old.success) { const p = emptyProfile(); p.peers.jules = old.data.peer; p.memory = { helpful: old.data.memory.helpful.map((value, i) => ({ id: `legacy-helpful-${i}`, text: value, subjectTitle: "General study" })), difficult: old.data.memory.difficult.map((value, i) => ({ id: `legacy-difficult-${i}`, text: value, subjectTitle: "General study" })) }; p.queuedQuestions = old.data.queuedQuestions; const migrated = profileSchema.parse(p); localStorage.setItem(key, JSON.stringify(migrated)); return { profile: migrated, resetNotice: null }; }
  } catch { /* Treat inaccessible or corrupt storage as unavailable. */ }
  return { profile: emptyProfile(), resetNotice: "Saved study data could not be read. Clear local data to reset it." };
 }
 export function saveProfile(profile: StudyProfileV1): void {
  const previous = loadProfile(); if (previous.resetNotice) throw new Error("Clear unreadable study data before saving.");
  const valid = profile.packs.flatMap(pack => { const result = packSchema.safeParse(pack); return result.success ? [result.data] : []; });
- const safe = profileSchema.parse({ ...profile, packs: valid.length === profile.packs.length ? valid : previous.profile.packs }); localStorage.setItem(key, JSON.stringify(safe));
+ const safe = profileSchema.parse({ ...profile, packs: valid.length === profile.packs.length ? valid : previous.profile.packs });
+ try { localStorage.setItem(key, JSON.stringify(safe)); } catch { throw new Error("Study progress could not be saved on this device."); }
 }
 export function deleteMemory(kind: keyof StudyMemory, id: string): void { const p = loadProfile().profile; p.memory[kind] = p.memory[kind].filter(item => item.id !== id); saveProfile(p); }
 export function editMemory(kind: keyof StudyMemory, id: string, value: string): void { const p = loadProfile().profile; p.memory[kind] = p.memory[kind].map(item => item.id === id ? { ...item, text: value } : item); saveProfile(p); }

@@ -18,7 +18,7 @@ export function StudyRoom({ session }: StudyRoomProps) {
   const [activeTurn] = activeTurns;
   const activePeer = session.peers.find((peer) => peer.id === activeTurn?.peerId);
   const visiblePeers = session.peers.map((peer) => ({ ...peer, name: study.profile?.peers[peer.id].name ?? peer.name }));
-  const visibleTurn = study.turns.at(-1) ?? activeTurn;
+  const visibleTurn = study.turns.at(-1) ?? (session.id === "old-english-demo" && !study.activePack ? activeTurn : undefined);
   const visiblePeer = visiblePeers.find((peer) => peer.id === visibleTurn?.peerId);
 
   if (activeTurns.length !== 1 || !activePeer) {
@@ -53,12 +53,12 @@ export function StudyRoom({ session }: StudyRoomProps) {
           <PeerList peers={visiblePeers} />
         </aside>
 
-        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onSelectedToolChange={study.setSelectedTool} />
+        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onSelectedToolChange={study.setSelectedTool} onClear={study.clearBoard} currentTask={study.currentQuestion} />
 
-        <section aria-labelledby="captions-heading" aria-live="polite" className="panel captions" role="status">
+        <section aria-labelledby="captions-heading" className="panel captions" role="status">
           <p className="eyebrow">Live support</p>
           <h2 id="captions-heading">Captions</h2>
-          <p className="speaker-name">{visiblePeer?.name ?? activePeer.name} is speaking</p>
+          {visibleTurn ? <><p className="speaker-name">{visiblePeer?.name ?? activePeer.name} is speaking</p>
           <p>{visibleTurn.caption}</p>
           {visibleTurn.provenance.status === "cited" ? (
             <>
@@ -67,7 +67,7 @@ export function StudyRoom({ session }: StudyRoomProps) {
             </>
           ) : (
             <p className="answer-status">Answer status: General knowledge</p>
-          )}
+          )}</> : <p>No peer has answered in this subject yet.</p>}
         </section>
       </div>
       <StudyExperience study={study} />

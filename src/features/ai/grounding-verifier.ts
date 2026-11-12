@@ -8,7 +8,7 @@ export function buildGroundingPrompt(excerpt: string, candidate: unknown, kind: 
 }
 async function checkWithProvider(prompt: { instructions: string; input: string }, key: string): Promise<unknown> {
  const client = new OpenAI({ apiKey: key, timeout: 20_000, maxRetries: 0 });
- const result = await client.responses.parse({ model: process.env.OPENAI_TEXT_MODEL || "gpt-6-luna", instructions: prompt.instructions, input: prompt.input, text: { format: zodTextFormat(groundingSchema, "grounding_verification") } });
+ const result = await client.responses.parse({ model: process.env.OPENAI_TEXT_MODEL || "gpt-6-luna", instructions: prompt.instructions, input: prompt.input, store: false, max_output_tokens: 80, text: { format: zodTextFormat(groundingSchema, "grounding_verification") } });
  if (result.status !== "completed") throw new Error("Incomplete grounding check");
  return result.output_parsed;
 }

@@ -3,8 +3,9 @@ import type { OfflineStudyPackV1 } from "@/features/storage/local-store";
 export function demoTurn(request: StudyTurnRequest): StudyTurnResponse {
  const quote = request.material.excerpt.slice(0, 200);
  const approach = request.peers[request.speaker].approach;
- const response = approach === "question-led" ? `What do you notice in this passage: “${quote}”?` : approach === "example-led" ? `For an example, look at “${quote}”. What stands out to you?` : `The passage says: “${quote}”. This is source evidence: a supported answer follows from the wording in the passage. Practice: find that wording and explain what it tells you.`;
- return { speaker: request.speaker, response, supportStatus: "supported", citedExcerpt: quote, boardAction: null, memorySuggestion: null, followUp: null };
+ const name = request.peers[request.speaker].name; const personality = request.peers[request.speaker].personality;
+ const response = approach === "question-led" ? `${name} (${personality}) asks about “${request.question}”: What do you notice in “${quote}”?` : approach === "example-led" ? `${name} (${personality}) connects your question “${request.question}” to this example: “${quote}”. What stands out?` : `${name} (${personality}) explains your question “${request.question}”: the passage says “${quote}”. Practice by explaining what that wording shows.`;
+ return { speaker: request.speaker, response, supportStatus: "supported", citedExcerpt: quote, boardAction: null, memorySuggestion: `Remember how ${name} connected the question to the quoted source.`, followUp: "Which exact words in the quote support your answer?" };
 }
 export function demoPack(request: StudyTurnRequest): OfflineStudyPackV1 {
  const quote = request.material.excerpt.slice(0, 200);

@@ -45,6 +45,7 @@ export function MaterialImport({ onConfirm }: MaterialImportProps) {
   return (
     <section aria-labelledby="material-import-heading">
       <h1 id="material-import-heading">Add study material</h1>
+      <p className="privacy-notice">Only confirm material you are allowed to share. Live AI requests send the confirmed excerpt and selected study context to OpenAI for processing with API storage disabled; prepared offline tools stay on this device.</p>
       <label htmlFor="material-file">Text, PDF, or DOCX file</label>
       <input
         id="material-file"

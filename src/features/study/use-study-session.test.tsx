@@ -123,7 +123,17 @@ describe("useStudySession", () => {
     const oldReload = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); expect(oldReload.result.current.activeMaterial.title).toBe(oldEnglish.title); act(() => oldReload.result.current.selectPack(biology.id)); oldReload.unmount();
     const bioReload = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); expect(bioReload.result.current.activeMaterial.title).toBe("Biology"); bioReload.unmount();
     const imported = { ...OLD_ENGLISH_DEMO, id: "imported-material", title: "New history", material: { title: "New history", excerpt: "The treaty was signed in 1919.", citation: "History handout" } };
-    const importedRoom = renderHook(() => useStudySession(imported)); expect(importedRoom.result.current.activePack).toBeNull(); expect(importedRoom.result.current.activeMaterial.title).toBe("New history");
+    const importedRoom = renderHook(() => useStudySession(imported)); expect(importedRoom.result.current.activePack).toBeNull(); expect(importedRoom.result.current.activeMaterial.title).toBe("New history"); expect(importedRoom.result.current.turns).toEqual([]); expect(importedRoom.result.current.boardNotes).toEqual([]);
+  });
+
+  it("does not clear a newer draft when an earlier successful request finishes", async () => {
+    let resolve!: (value: unknown) => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; })));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    act(() => result.current.setInput("First draft")); let pending!: Promise<void>; act(() => { pending = result.current.submitTurn(); });
+    act(() => result.current.setInput("Newer draft"));
+    await act(async () => { resolve({ ok: true, json: async () => ({ speaker: "jules", response: "Answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) }); await pending; });
+    expect(result.current.input).toBe("Newer draft");
   });
 
   it("prevents an aborted older request from overwriting a newer request", async () => {

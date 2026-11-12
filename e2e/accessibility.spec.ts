@@ -6,7 +6,15 @@ test("demo room has no serious accessibility violations at narrow width and 200 
   await page.goto("/?room=old-english-demo");
   await page.evaluate(() => { document.documentElement.style.zoom = "2"; });
   await expect(page.getByRole("heading", { name: "Working board" })).toBeVisible();
-  await page.getByRole("button", { name: "Peer settings" }).first().focus();
+  const overflowing = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>("body *")]
+    .filter((element) => element.getBoundingClientRect().right > window.innerWidth + 1)
+    .map((element) => `${element.tagName}.${element.className}:${element.textContent?.trim().slice(0, 60)}`));
+  expect(overflowing).toEqual([]);
+  const firstSettings = page.getByRole("button", { name: "Peer settings" }).first();
+  await firstSettings.focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(firstSettings).toBeFocused();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Peer settings" }).first()).toBeFocused();
@@ -44,6 +52,7 @@ test("keyboard-only learner changes and replaces a peer, clears the board, and c
 
   const clear = page.getByRole("button", { name: "Clear board" });
   await clear.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Confirm clear board" })).toBeFocused(); await page.keyboard.press("Enter");
   await expect(page.getByText(/Board cleared/)).toBeVisible();
   await expect(clear).toBeFocused();
 

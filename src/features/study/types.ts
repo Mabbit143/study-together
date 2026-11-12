@@ -29,6 +29,9 @@ export type StudyTurn = {
   peerId: PeerId;
   caption: string;
   provenance: AnswerProvenance;
+  followUp?: string | null;
+  memorySuggestion?: string | null;
+  supportStatus?: "supported" | "general-knowledge" | "uncertain";
 };
 
 export type StudySession = {

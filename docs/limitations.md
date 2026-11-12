@@ -8,6 +8,6 @@
 - Prepared offline study contains only generated branches and deterministic local tools. It cannot answer a new free-form question without reconnecting and explicit approval.
 - Data is local to one browser. Clearing browser data removes preferences, memories, packs, progress, and queued questions; there is no recovery or cross-device sync.
 - Public live AI requires correctly configured OpenAI, Upstash, and trusted Vercel headers. The app deliberately disables paid calls when shared limiting is missing or unhealthy.
-- IP-based limits can affect learners on shared networks and are not a complete deployment budget control. Deployment spending alerts and hard provider limits are still required.
+- IP-based limits can affect learners on shared networks and are not a complete deployment budget control. One text operation uses generation plus a separate grounding-verification call. Hard OpenAI project budgets, alerts, and deployment monitoring are mandatory before paid activation.
 - Browser extraction, service-worker storage, microphone behavior, and audio playback vary by device and browser.
 - The prototype makes no claims about grades, retention, accessibility certification, or learning outcomes and does not replace instructors, disability services, tutoring, or academic policies.

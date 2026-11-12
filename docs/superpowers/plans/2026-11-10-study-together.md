@@ -8,6 +8,8 @@
 
 **Tech Stack:** Node.js 22 LTS; Next.js 16.3; React 19; TypeScript; Tailwind; Zod; OpenAI JavaScript SDK; `pdfjs-dist`; `mammoth`; Vitest + Testing Library; Playwright + Axe.
 
+**Release amendment (2026-11-12):** Security verification moved the release to exact Next.js 16.4.6. New transcription work uses current `gpt-transcribe`; the earlier Task 5 model name below records the original plan, not the shipped configuration.
+
 **Spec:** `docs/superpowers/specs/2026-11-10-study-together-design.md`
 
 ## Global Constraints
