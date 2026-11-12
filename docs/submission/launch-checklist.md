@@ -4,7 +4,7 @@ Unchecked items are unverified. Do not turn them into claims without direct read
 
 ## Local release gate
 
-- [x] Unit/component/API tests pass locally: 126/126 on November 12, 2026.
+- [x] Unit/component/API tests pass locally: 132/132 on November 12, 2026.
 - [x] Lint and TypeScript pass locally.
 - [x] Production build passes on Next.js 16.4.6 without network font fetches.
 - [x] Chromium acceptance suite passes locally: 10/10, including both subjects and true offline reload.
@@ -12,15 +12,16 @@ Unchecked items are unverified. Do not turn them into claims without direct read
 - [x] Source secret/privacy scan found no key, private learner data, grade, uploaded source file, raw audio, transcript, test trace, screenshot, or video artifact.
 - [x] README, privacy, limitations, credits, story, script, and screenshot list match the locally verified behavior.
 
-## Account-authorized publication — not yet verified
+## Account-authorized publication — partially verified
 
-- [ ] User approves the exact public GitHub repository/organization and license.
-- [ ] Create or attach the GitHub remote; push the reviewed commit; record repository URL and commit SHA: ______.
-- [ ] User approves Vercel project/account and live service spending controls.
+- [x] User approved the public `Mabbit143/study-together` repository and MIT license.
+- [x] Created the GitHub remote and pushed the reviewed app: https://github.com/Mabbit143/study-together at `c8aecf284681686427df72e663e3ac4464e8990f`.
+- [x] User approved and linked the `mabbit143/study-together` Vercel project.
+- [x] Deployed and verified the credential-free demo mode at https://study-together-one.vercel.app on November 12, 2026 at 21:35:20 UTC.
 - [ ] Configure Vercel, OpenAI, and Upstash secrets without placing values in source or chat.
 - [ ] Configure provider hard spending limits/alerts and confirm the app fails closed when the limiter is unavailable.
 - [ ] Verify text generation, transcription, and speech with synthetic data on the deployed environment.
-- [ ] Verify the logged-out deployment URL in a clean browser; record URL, commit SHA, and UTC time: ______.
+- [x] Verified the logged-out landing page returns HTTP 200 and the deployed demo API returns a supported, cited response.
 - [ ] Verify service-worker offline reload on the deployed origin and a second device/browser.
 
 ## Walkthrough and assets — not yet verified

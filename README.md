@@ -64,7 +64,7 @@ No claim is made that Study Together improves grades, replaces instructors, or g
 
 ## Release status
 
-Local source and tests can be release-ready independently of publication. GitHub push, Vercel configuration, live-provider verification, walkthrough upload, Devpost submission/read-back, and the final release tag remain explicitly account-authorized steps in [the launch checklist](docs/submission/launch-checklist.md).
+The public source is available at [Mabbit143/study-together](https://github.com/Mabbit143/study-together), and the credential-free demo is deployed at [study-together-one.vercel.app](https://study-together-one.vercel.app). Live-provider credentials and spending controls, deployed second-device verification, walkthrough upload, Devpost submission/read-back, and the final release tag remain explicitly gated in [the launch checklist](docs/submission/launch-checklist.md).
 
 ## License
 
