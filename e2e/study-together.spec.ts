@@ -170,6 +170,9 @@ test("downloads a complete offline pack, works offline, and never auto-sends que
   await expect(page.getByRole("heading", { name: "What does the source say about Cell biology?" })).toBeVisible();
 
   await page.getByRole("button", { name: "Simulate going offline" }).click();
+  await page.getByRole("button", { name: "Pointer" }).click(); await expect(page.getByText(/review and select board items/i)).toBeVisible();
+  await page.getByRole("button", { name: "Pen" }).click(); await page.getByLabel("Pen mark").fill("Connect mitochondria to energy"); await page.getByRole("button", { name: "Add pen mark" }).click();
+  await page.getByRole("button", { name: "Sticky note" }).click(); await expect(page.getByLabel("Add board note")).toBeFocused();
   await page.getByLabel("Search confirmed excerpt").fill("Ribosomes");
   await page.getByRole("button", { name: /Highlight on whiteboard: Ribosomes/ }).click();
   await page.getByLabel("Add board note").fill("Compare mitochondria and ribosomes.");
@@ -192,6 +195,7 @@ test("downloads a complete offline pack, works offline, and never auto-sends que
   await page.reload();
   await expect(page.getByRole("heading", { name: "Cell biology study group" })).toBeVisible();
   await expect(page.getByText("Compare mitochondria and ribosomes.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Connect mitochondria to energy/)).toBeVisible();
   await expect(page.getByText("Ribosomes build proteins from amino acids", { exact: false }).last()).toBeVisible();
   await expect(page.getByText("Practice complete for this prepared branch.", { exact: true })).toBeVisible();
   await context.setOffline(false);
@@ -226,6 +230,7 @@ test("offline without a pack survives a real service-worker reload and keeps det
   await expect(page.locator(".offline-label")).toContainText("Offline without a prepared pack");
   await page.getByLabel("Search confirmed excerpt").fill("cwēn");
   await expect(page.getByRole("button", { name: /Highlight on whiteboard:.*cwēn/i })).toBeVisible();
+  await page.getByRole("button", { name: "Sticky note" }).click();
   await page.getByLabel("Add board note").fill("My local note");
   await page.getByRole("button", { name: "Save board note" }).click();
   await expect(page.getByText("My local note", { exact: true })).toBeVisible();

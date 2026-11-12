@@ -23,6 +23,7 @@ describe("StudyExperience", () => {
     expect(screen.getByRole("button", { name: /start recording/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /prepare offline study pack/i })).toBeInTheDocument();
     expect(screen.getByText(/prepared offline study is not live ai/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /sticky note/i }));
     fireEvent.change(screen.getByRole("textbox", { name: /board note/i }), { target: { value: "My note" } });
     fireEvent.click(screen.getByRole("button", { name: /save board note/i }));
     expect(screen.getByText("My note")).toBeInTheDocument();
@@ -57,6 +58,29 @@ describe("StudyExperience", () => {
     expect(await screen.findByLabelText(/optional ai voice playback/i)).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledWith("/api/speech", expect.objectContaining({ method: "POST" }));
     fireEvent.click(screen.getByRole("button", { name: /stop ai voice/i })); expect(screen.queryByLabelText(/optional ai voice playback/i)).not.toBeInTheDocument(); expect(revokeObjectURL).toHaveBeenCalledWith("blob:voice");
+  });
+
+  it("aborts pending speech on unmount without creating an object URL", async () => {
+    let resolve!: (value: unknown) => void;
+    const fetcher = vi.fn((_url, init?: RequestInit) => new Promise((done, reject) => { resolve = done; init?.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))); }));
+    vi.stubGlobal("fetch", fetcher); const createObjectURL = vi.fn(() => "blob:late"); Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    const { unmount } = render(<ExperienceHarness />); fireEvent.click(screen.getByRole("button", { name: /play ai voice/i })); unmount();
+    resolve({ ok: true, blob: async () => new Blob(["late"]) }); await Promise.resolve(); await Promise.resolve();
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("renders the peer answer once with a consistent uncertain label", () => {
+    render(<StudyRoom session={{ ...OLD_ENGLISH_DEMO, turns: OLD_ENGLISH_DEMO.turns.map((turn) => turn.id === OLD_ENGLISH_DEMO.activeTurnId ? { ...turn, caption: "Unique uncertain answer", supportStatus: "uncertain" as const, provenance: { status: "general-knowledge" as const } } : turn) }} />);
+    expect(screen.getAllByText("Unique uncertain answer")).toHaveLength(1);
+    expect(screen.getByText(/peer is uncertain/i)).toBeInTheDocument();
+    expect(screen.queryByText(/general knowledge—not supported/i)).not.toBeInTheDocument();
+  });
+
+  it("makes each whiteboard mode change available behavior", () => {
+    render(<StudyRoom session={OLD_ENGLISH_DEMO} />);
+    fireEvent.click(screen.getByRole("button", { name: "Pen" })); expect(screen.getByRole("textbox", { name: /pen mark/i })).toBeInTheDocument(); fireEvent.change(screen.getByRole("textbox", { name: /pen mark/i }), { target: { value: "underline queen" } }); fireEvent.click(screen.getByRole("button", { name: /add pen mark/i })); expect(screen.getByText(/underline queen/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /sticky note/i })); expect(screen.getByRole("textbox", { name: /board note/i })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Pointer" })); expect(screen.getByText(/review and select board items/i)).toBeInTheDocument();
   });
 
   it("shows live and persisted grounded highlights in the primary whiteboard", async () => {

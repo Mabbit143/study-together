@@ -10,6 +10,7 @@ export type BoardState = {
   notes: string[];
   selectedTool: "pointer" | "pen" | "sticky";
   highlights?: string[];
+  penMarks?: string[];
 };
 
 export type Peer = {

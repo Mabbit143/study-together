@@ -53,14 +53,14 @@ export function StudyRoom({ session }: StudyRoomProps) {
           <PeerList peers={visiblePeers} />
         </aside>
 
-        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onSelectedToolChange={study.setSelectedTool} onClear={study.clearBoard} currentTask={study.currentQuestion} />
+        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, penMarks: study.penMarks, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onPenMarksChange={study.setPenMarks} onSelectedToolChange={study.setSelectedTool} onClear={study.clearBoard} currentTask={study.currentQuestion} />
 
         <section aria-labelledby="captions-heading" className="panel captions" role="status">
           <p className="eyebrow">Live support</p>
           <h2 id="captions-heading">Captions</h2>
           {visibleTurn ? <><p className="speaker-name">{visiblePeer?.name ?? activePeer.name} is speaking</p>
           <p>{visibleTurn.caption}</p>
-          {visibleTurn.provenance.status === "cited" ? (
+          {visibleTurn.supportStatus === "uncertain" ? <p className="answer-status">Answer status: This peer is uncertain; check the source or ask a narrower question.</p> : visibleTurn.provenance.status === "cited" ? (
             <>
               <p className="answer-status">Answer status: Cited source</p>
               <cite>Source for this answer: {visibleTurn.provenance.sourceCitation}</cite>

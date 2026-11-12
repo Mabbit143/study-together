@@ -4,7 +4,7 @@ Unchecked items are unverified. Do not turn them into claims without direct read
 
 ## Local release gate
 
-- [x] Unit/component/API tests pass locally: 119/119 on November 12, 2026.
+- [x] Unit/component/API tests pass locally: 126/126 on November 12, 2026.
 - [x] Lint and TypeScript pass locally.
 - [x] Production build passes on Next.js 16.4.6 without network font fetches.
 - [x] Chromium acceptance suite passes locally: 10/10, including both subjects and true offline reload.

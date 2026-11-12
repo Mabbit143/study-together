@@ -149,6 +149,55 @@ describe("useStudySession", () => {
     expect(result.current.turns.at(-1)?.caption).toBe("New answer");
     expect(result.current.status).toBe("success");
   });
+
+  it("merges a delayed grounded response with newer board edits", async () => {
+    let resolve!: (value: unknown) => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; })));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    act(() => result.current.setInput("Explain queen"));
+    let pending!: Promise<void>; act(() => { pending = result.current.submitTurn(); });
+    act(() => { result.current.setBoardNotes(["Newer note"]); result.current.setHighlight("þone cyning"); result.current.setSelectedTool("sticky"); result.current.setInput("Newer draft"); });
+    await act(async () => { resolve({ ok: true, json: async () => ({ speaker: "jules", response: "Grounded answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: { type: "add-note", text: "AI note" }, memorySuggestion: null, followUp: null }) }); await pending; });
+    expect(result.current.boardNotes).toEqual(["Newer note", "AI note"]);
+    expect(result.current.highlights).toEqual(expect.arrayContaining(["þone cyning", "cwēn"]));
+    expect(result.current.selectedTool).toBe("sticky");
+    expect(result.current.input).toBe("Newer draft");
+  });
+
+  it("merges preparation with latest board state and can cancel it", async () => {
+    let resolve!: (value: unknown) => void;
+    const pack = demoPack({ sessionId: "demo", material: OLD_ENGLISH_DEMO.material, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Prepare", speaker: "jules", demo: true });
+    vi.stubGlobal("fetch", vi.fn((_url, init?: RequestInit) => new Promise((done, reject) => { resolve = done; init?.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))); })));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    let pending!: Promise<void>; act(() => { pending = result.current.preparePack(); });
+    act(() => { result.current.setBoardNotes(["Edited while preparing"]); result.current.setSelectedTool("sticky"); });
+    await act(async () => { resolve({ ok: true, json: async () => pack }); await pending; });
+    expect(result.current.activePack?.board.notes).toEqual(["Edited while preparing"]);
+    expect(result.current.activePack?.board.selectedTool).toBe("sticky");
+    let cancelled!: Promise<void>; act(() => { cancelled = result.current.preparePack(); }); act(() => result.current.cancelTurn()); await act(() => cancelled);
+    expect(result.current.status).toBe("success");
+  });
+
+  it("shows unsaved state when pack persistence fails while preserving visible work", () => {
+    const pack = demoPack({ sessionId: "demo", material: OLD_ENGLISH_DEMO.material, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Prepare", speaker: "jules", demo: true });
+    const first = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); act(() => first.result.current.importPack(pack));
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("full", "QuotaExceededError"); });
+    act(() => first.result.current.setBoardNotes(["Visible unsaved note"]));
+    expect(first.result.current.boardNotes).toEqual(["Visible unsaved note"]);
+    expect(first.result.current.status).toBe("storage-error");
+    expect(first.result.current.boardSaveNotice).toMatch(/not saved/i);
+  });
+
+  it("keeps a packless queued question bound to its original subject", async () => {
+    const history = { ...OLD_ENGLISH_DEMO, id: "imported-material", title: "History", material: { title: "History", excerpt: "The treaty was signed in 1919.", citation: "History handout" } };
+    let body: { material?: { title?: string } } | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (_url, init?: RequestInit) => { body = JSON.parse(String(init?.body)); return { ok: true, json: async () => ({ speaker: "jules", response: "History answer", supportStatus: "supported", citedExcerpt: "1919", boardAction: null, memorySuggestion: null, followUp: null }) }; }));
+    const first = renderHook(() => useStudySession(history, false)); act(() => first.result.current.setInput("When was it signed?")); await act(() => first.result.current.submitTurn()); const queued = first.result.current.outbox[0]; first.unmount();
+    const biologyPack = { ...demoPack({ sessionId: "bio", material: { title: "Biology", excerpt: "Cells contain DNA.", citation: "Biology" }, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "DNA", speaker: "rae", demo: true }), id: "bio" };
+    const second = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); act(() => { second.result.current.importPack(biologyPack); second.result.current.setOnline(true); }); await act(() => second.result.current.sendQueued(queued.id));
+    expect(body?.material?.title).toBe("History");
+    expect(second.result.current.activeMaterial.title).toBe("History");
+  });
 });
 
 function loadSavedPack() { return JSON.parse(localStorage.getItem("study-together.profile.v1") ?? "{}").packs?.[0]?.id; }
