@@ -12,7 +12,8 @@ AI tools assisted with brainstorming, architecture, code generation, test creati
 - PDF.js (`pdfjs-dist`) for browser PDF text extraction
 - Mammoth for DOCX text extraction
 - Zod for runtime schemas
-- OpenAI JavaScript SDK and OpenAI models for optional generation, transcription, and speech
+- Google Gemini API for optional live generation and grounding verification
+- OpenAI JavaScript SDK and OpenAI models for optional transcription and speech
 - Upstash Redis REST for deployment-wide operation counters when configured
 - Playwright and Axe for browser and accessibility checks
 - Vitest and Testing Library for component and contract tests

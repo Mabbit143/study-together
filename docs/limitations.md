@@ -7,7 +7,7 @@
 - Optional speech is AI-generated and may pronounce specialized material poorly. The current isolated `gpt-4o-mini-tts` adapter is deprecated and must migrate before January 6, 2027.
 - Prepared offline study contains only generated branches and deterministic local tools. It cannot answer a new free-form question without reconnecting and explicit approval.
 - Data is local to one browser. Clearing browser data removes preferences, memories, packs, progress, and queued questions; there is no recovery or cross-device sync.
-- Public live AI requires correctly configured OpenAI, Upstash, and trusted Vercel headers. The app deliberately disables paid calls when shared limiting is missing or unhealthy.
-- IP-based limits can affect learners on shared networks and are not a complete deployment budget control. One text operation uses generation plus a separate grounding-verification call. Hard OpenAI project budgets, alerts, and deployment monitoring are mandatory before paid activation.
+- Public live text requires a correctly configured Gemini key. Optional Upstash limiting adds a shared per-IP cap; otherwise the configured Gemini project quota is the cap.
+- IP-based limits can affect learners on shared networks and are not a complete deployment budget control. One text operation uses generation plus a separate grounding-verification call. Provider budgets, alerts, and deployment monitoring should be configured before broader public use.
 - Browser extraction, service-worker storage, microphone behavior, and audio playback vary by device and browser.
 - The prototype makes no claims about grades, retention, accessibility certification, or learning outcomes and does not replace instructors, disability services, tutoring, or academic policies.

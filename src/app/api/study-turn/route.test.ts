@@ -21,8 +21,9 @@ describe("verified live output", () => {
   const response = await createHandler("turn", { apiKey: "fake", limit: allow, generate: vi.fn().mockResolvedValue(generated), verify })(request(data));
   expect(response.status).toBe(200); expect(await response.json()).toEqual(generated); expect(verify).toHaveBeenCalledWith(data.material.excerpt, generated, "turn", "fake");
  });
- it("does not call generation when the real limiter is unconfigured", async () => {
-  const generate = vi.fn(); const response = await createHandler("turn", { apiKey: "fake", generate })(request(data));
-  expect(await response.json()).toMatchObject({ code: "limiter_unavailable", demoAvailable: true }); expect(generate).not.toHaveBeenCalled();
+ it("uses the provider quota when an optional distributed limiter is unconfigured", async () => {
+  const generated = demoTurn(data); const generate = vi.fn().mockResolvedValue(generated); const verify = vi.fn().mockResolvedValue(true);
+  const response = await createHandler("turn", { apiKey: "fake", generate, verify })(request(data));
+  expect(response.status).toBe(200); expect(await response.json()).toEqual(generated); expect(generate).toHaveBeenCalledOnce();
  });
 });

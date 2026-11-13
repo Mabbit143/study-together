@@ -35,12 +35,15 @@ npm run test:e2e
 
 ## Optional live services
 
-The deterministic demo and prepared local tools work without credentials. Live generation fails closed unless the deployment has all required secrets and a trusted Vercel client-IP header:
+The deterministic demo and prepared local tools work without credentials. Live text generation uses Gemini and requires:
+
+- `GEMINI_API_KEY`
+- `GEMINI_TEXT_MODEL` (optional; defaults to `gemini-3.8-flash`)
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (optional additional request limiter)
+
+Optional transcription and speech still require a separately funded OpenAI account and durable limiter:
 
 - `OPENAI_API_KEY`
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
-- `OPENAI_TEXT_MODEL` (defaults to `gpt-6-luna`)
 - `OPENAI_TRANSCRIBE_MODEL` (defaults to `gpt-transcribe`)
 - `OPENAI_SPEECH_MODEL` (temporary default `gpt-4o-mini-tts`)
 
@@ -49,7 +52,7 @@ Never place real values in `.env.example` or client code. The temporary speech a
 ## Data flow
 
 - File parsing happens in the browser. Uploaded files are not retained by this app.
-- Only the learner-confirmed excerpt, current question, selected peer settings, bounded recent turns, and bounded memories scoped to the current subject are sent to live server routes. OpenAI API storage is disabled for generation and grounding verification.
+- Only the learner-confirmed excerpt, current question, selected peer settings, bounded recent turns, and bounded memories scoped to the current subject are sent to Gemini for generation and grounding verification.
 - Server logs intentionally omit excerpts, transcripts, speech text, raw audio, and secrets.
 - Preferences, memory, prepared packs, whiteboard state, and queued questions stay in browser local storage until the learner deletes them.
 - Prepared offline study is precomputed text, not a local AI model. Free-form offline questions wait for explicit approval after reconnection.

@@ -10,9 +10,9 @@ The browser stores peer preferences, learner-created notes, source highlights, c
 
 ## Live AI routes
 
-When live services are configured, the confirmed excerpt and bounded, subject-selected context needed for the requested turn may be sent to OpenAI. Both generation and the separate grounding check set API storage off (`store: false`); OpenAI still processes the request and may retain limited abuse-monitoring data under its API policies and legal exceptions. Transcription sends a bounded recording only after the learner explicitly starts and stops recording. Optional speech sends visible caption text only after the learner presses Play AI voice.
+When live text services are configured, the confirmed excerpt and bounded, subject-selected context needed for the requested turn are sent to Google Gemini for generation and a separate grounding check. Google processes those requests under the Gemini API terms for the configured account and billing tier. Optional OpenAI transcription sends a bounded recording only after the learner explicitly starts and stops recording. Optional OpenAI speech sends visible caption text only after the learner presses Play AI voice.
 
-Server routes are designed not to log excerpts, questions, transcripts, raw audio, or speech text. Vercel and configured service providers may still process operational metadata under their own policies. A durable Upstash counter uses a Vercel-provided client IP to enforce shared public usage limits; the application does not store that IP in the learner profile.
+Server routes are designed not to log excerpts, questions, transcripts, raw audio, or speech text. Vercel and configured service providers may still process operational metadata under their own policies. When configured, a durable Upstash counter uses a Vercel-provided client IP to enforce shared public usage limits; the application does not store that IP in the learner profile.
 
 ## Offline behavior
 

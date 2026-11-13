@@ -18,8 +18,8 @@ Unchecked items are unverified. Do not turn them into claims without direct read
 - [x] Created the GitHub remote and pushed the reviewed app: https://github.com/Mabbit143/study-together at `c8aecf284681686427df72e663e3ac4464e8990f`.
 - [x] User approved and linked the `mabbit143/study-together` Vercel project.
 - [x] Deployed and verified the credential-free demo mode at https://study-together-one.vercel.app on November 12, 2026 at 21:35:20 UTC.
-- [ ] Configure Vercel, OpenAI, and Upstash secrets without placing values in source or chat.
-- [ ] Configure provider hard spending limits/alerts and confirm the app fails closed when the limiter is unavailable.
+- [x] Configured the protected Gemini secret in Vercel without placing its value in source or chat.
+- [ ] Configure provider spending limits/alerts; optionally add Upstash for an application-level shared request cap.
 - [ ] Verify text generation, transcription, and speech with synthetic data on the deployed environment.
 - [x] Verified the logged-out landing page returns HTTP 200 and the deployed demo API returns a supported, cited response.
 - [ ] Verify service-worker offline reload on the deployed origin and a second device/browser.
