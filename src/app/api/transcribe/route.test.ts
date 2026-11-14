@@ -16,11 +16,11 @@ describe("transcribe route", () => {
     expect((await createTranscribeHandler({ ...base, readAudio: upload(new Blob(["x"], { type: "text/plain" })) })(request())).status).toBe(415);
     expect((await createTranscribeHandler({ ...base, readAudio: upload(new Blob([new Uint8Array(25 * 1024 * 1024 + 1)], { type: "audio/webm" })) })(request())).status).toBe(413);
   });
-  it.each([["timeout", { name: "TimeoutError" }, 504], ["quota", { status: 429 }, 503], ["invalid_output", "", 502]])("handles %s without content logs", async (_name, result, status) => {
+  it.each([["timeout", { name: "TimeoutError" }, 504, "timeout"], ["quota", { status: 429 }, 503, "quota"], ["ElevenLabs authorization", { statusCode: 401 }, 503, "provider_auth"], ["ElevenLabs configuration", { statusCode: 422 }, 502, "provider_configuration"], ["invalid_output", "", 502, "invalid_transcript"]])("handles %s without content logs", async (_name, result, status, code) => {
     const log = vi.spyOn(console, "error");
     const transcribe = result === "" ? vi.fn().mockResolvedValue(result) : vi.fn().mockRejectedValue(result);
     const response = await createTranscribeHandler({ apiKey: "fake", limit: vi.fn().mockResolvedValue("allowed"), readAudio: upload(new Blob(["audio"], { type: "audio/webm" })), transcribe })(request());
-    expect(response.status).toBe(status); expect(log).not.toHaveBeenCalled(); log.mockRestore();
+    expect(response.status).toBe(status); expect(await response.json()).toMatchObject({ code }); expect(log).not.toHaveBeenCalled(); log.mockRestore();
   });
   it("fails closed before provider when the durable limiter is unavailable", async () => {
     const transcribe = vi.fn(); const response = await createTranscribeHandler({ apiKey: "fake", limit: vi.fn().mockResolvedValue("unavailable"), readAudio: upload(new Blob(["audio"], { type: "audio/webm" })), transcribe })(request());
