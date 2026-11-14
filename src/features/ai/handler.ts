@@ -33,7 +33,9 @@ export function createHandler(kind: Kind, dependencies: Dependencies = {}) {
    if (containsSourceInjection(data.material.excerpt)) return error(400, "unsafe_source", "The passage contains instructions directed at the study assistant. Remove those instructions or try the demo.", true);
    const key = dependencies.apiKey ?? process.env.GEMINI_API_KEY;
    if (!key) return error(503, "missing_key", "The study service is unavailable. Try the demo.", false);
-   const limiter = dependencies.limit ?? (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN ? consumeRateLimit : undefined);
+   const limiterUrl = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+   const limiterToken = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+   const limiter = dependencies.limit ?? (limiterUrl && limiterToken ? consumeRateLimit : undefined);
    if (limiter) {
     const limit = await limiter(request);
     if (limit === "limited") return error(429, "rate_limit", "You've reached the study limit. Try again later or use the demo.", true);

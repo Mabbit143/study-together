@@ -3,7 +3,7 @@ import { isIP } from "node:net";
 type Config = { vercel?: string; url?: string; token?: string };
 export type LimitResult = "allowed" | "limited" | "unavailable";
 const script = "local n = redis.call('INCR', KEYS[1]); if n == 1 then redis.call('EXPIRE', KEYS[1], 3600) end; return n";
-export async function consumeRateLimit(request: Request, config: Config = { vercel: process.env.VERCEL, url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }, fetcher: typeof fetch = fetch): Promise<LimitResult> {
+export async function consumeRateLimit(request: Request, config: Config = { vercel: process.env.VERCEL, url: process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN }, fetcher: typeof fetch = fetch): Promise<LimitResult> {
  // Vercel overwrites this header with the connecting IP. Other hosts are not trusted.
  const identity = request.headers.get("x-vercel-forwarded-for")?.trim();
  if (config.vercel !== "1" || !identity || !isIP(identity) || !config.url || !config.token) return "unavailable";

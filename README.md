@@ -39,15 +39,16 @@ The deterministic demo and prepared local tools work without credentials. Live t
 
 - `GEMINI_API_KEY`
 - `GEMINI_TEXT_MODEL` (optional; defaults to `gemini-3.8-flash`)
-- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (optional additional request limiter)
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`, or Vercel KV's `KV_REST_API_URL` and `KV_REST_API_TOKEN` (optional additional request limiter)
 
-Optional transcription and speech still require a separately funded OpenAI account and durable limiter:
+Optional transcription and speech use ElevenLabs and require a durable limiter:
 
-- `OPENAI_API_KEY`
-- `OPENAI_TRANSCRIBE_MODEL` (defaults to `gpt-transcribe`)
-- `OPENAI_SPEECH_MODEL` (temporary default `gpt-4o-mini-tts`)
+- `ELEVENLABS_API_KEY`
+- `ELEVENLABS_TRANSCRIBE_MODEL` (optional; defaults to `scribe_v3`)
+- `ELEVENLABS_SPEECH_MODEL` (optional; defaults to `eleven_flash_v2_5`)
+- `ELEVENLABS_VOICE_ALLOY_ID`, `ELEVENLABS_VOICE_CORAL_ID`, and `ELEVENLABS_VOICE_SAGE_ID` (optional voice overrides)
 
-Never place real values in `.env.example` or client code. The temporary speech adapter must migrate to `gpt-realtime-2.1-mini` through the Realtime API before the documented January 6, 2027 shutdown of `gpt-4o-mini-tts`.
+Never place real values in `.env.example` or client code.
 
 ## Data flow
 

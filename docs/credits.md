@@ -13,7 +13,7 @@ AI tools assisted with brainstorming, architecture, code generation, test creati
 - Mammoth for DOCX text extraction
 - Zod for runtime schemas
 - Google Gemini API for optional live generation and grounding verification
-- OpenAI JavaScript SDK and OpenAI models for optional transcription and speech
+- ElevenLabs JavaScript SDK, Scribe, and Flash TTS for optional transcription and speech
 - Upstash Redis REST for deployment-wide operation counters when configured
 - Playwright and Axe for browser and accessibility checks
 - Vitest and Testing Library for component and contract tests

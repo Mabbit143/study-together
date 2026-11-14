@@ -1,14 +1,14 @@
 import type { LimitResult } from "@/features/ai/rate-limit";
 import { MAX_AUDIO_BYTES, speechRequestSchema, supportedAudioTypes } from "./audio-schema";
 import { consumeAudioRateLimit } from "./rate-limit";
-import { synthesizeSpeech, transcribeAudio } from "./openai-audio";
+import { synthesizeSpeech, transcribeAudio } from "./elevenlabs-audio";
 
 type Common = { apiKey?: string; limit?: (request: Request) => Promise<LimitResult> };
 type AudioUpload = Blob & { name?: string };
 type TranscribeDependencies = Common & { readAudio?: (request: Request) => Promise<AudioUpload | null>; transcribe?: (file: File, key: string) => Promise<string> };
 type SpeechDependencies = Common & { speak?: (text: string, voice: "alloy" | "coral" | "sage", key: string) => Promise<Uint8Array> };
 const failure = (status: number, code: string, message: string, canRetry = true) => Response.json({ code, message, canRetry }, { status });
-async function gate(request: Request, dependencies: Common): Promise<Response | string> { const key = dependencies.apiKey ?? process.env.OPENAI_API_KEY; if (!key) return failure(503, "missing_key", "Voice service is unavailable. Continue by typing.", false); const result = await (dependencies.limit ?? consumeAudioRateLimit)(request); if (result === "limited") return failure(429, "rate_limit", "Voice limit reached. Continue by typing and try again later."); if (result !== "allowed") return failure(503, "limiter_unavailable", "Voice service is unavailable. Continue by typing."); return key; }
+async function gate(request: Request, dependencies: Common): Promise<Response | string> { const key = dependencies.apiKey ?? process.env.ELEVENLABS_API_KEY; if (!key) return failure(503, "missing_key", "Voice service is unavailable. Continue by typing.", false); const result = await (dependencies.limit ?? consumeAudioRateLimit)(request); if (result === "limited") return failure(429, "rate_limit", "Voice limit reached. Continue by typing and try again later."); if (result !== "allowed") return failure(503, "limiter_unavailable", "Voice service is unavailable. Continue by typing."); return key; }
 function providerFailure(error: unknown) { const value = error as { name?: string; status?: number }; if (value.name === "TimeoutError" || value.name === "APIConnectionTimeoutError") return failure(504, "timeout", "Voice service took too long. Continue by typing."); if (value.status === 429) return failure(503, "quota", "Voice service is temporarily unavailable. Continue by typing."); return failure(502, "provider_error", "Voice service could not complete that request. Continue by typing."); }
 async function withTimeout<T>(operation: Promise<T>): Promise<T> { let timer: ReturnType<typeof setTimeout> | undefined; try { return await Promise.race([operation, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error("timeout"), { name: "TimeoutError" })), 20_000); })]); } finally { if (timer) clearTimeout(timer); } }
 
