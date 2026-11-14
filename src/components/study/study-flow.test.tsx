@@ -94,9 +94,14 @@ describe("StudyExperience", () => {
 
   it("makes each whiteboard mode change available behavior", () => {
     render(<StudyRoom session={OLD_ENGLISH_DEMO} />);
-    fireEvent.click(screen.getByRole("button", { name: "Pen" })); expect(screen.getByRole("textbox", { name: /pen mark/i })).toBeInTheDocument(); fireEvent.change(screen.getByRole("textbox", { name: /pen mark/i }), { target: { value: "underline queen" } }); fireEvent.click(screen.getByRole("button", { name: /add pen mark/i })); expect(screen.getByText(/underline queen/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pen" })); expect(screen.getByLabelText(/drawable whiteboard surface/i)).toBeInTheDocument(); fireEvent.change(screen.getByRole("textbox", { name: /describe a pen mark/i }), { target: { value: "underline queen" } }); fireEvent.click(screen.getByRole("button", { name: /add described pen mark/i })); expect(screen.getByText(/underline queen/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /sticky note/i })); expect(screen.getByRole("textbox", { name: /board note/i })).toHaveFocus();
-    fireEvent.click(screen.getByRole("button", { name: "Pointer" })); expect(screen.getByText(/review and select board items/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pointer" })); const note = screen.getByRole("button", { name: /cwēn = queen/i }); fireEvent.click(note); expect(note).toHaveAttribute("aria-pressed", "true"); expect(screen.getByText(/one board item is selected/i)).toBeInTheDocument();
+  });
+
+  it("draws on the whiteboard with pointer input and can undo the stroke", () => {
+    render(<StudyRoom session={OLD_ENGLISH_DEMO} />); fireEvent.click(screen.getByRole("button", { name: "Pen" })); const surface = screen.getByLabelText(/drawable whiteboard surface/i); Object.defineProperty(surface, "getBoundingClientRect", { value: () => ({ left: 0, top: 0, width: 200, height: 100, right: 200, bottom: 100, x: 0, y: 0, toJSON: () => ({}) }) });
+    fireEvent.pointerDown(surface, { pointerId: 1, clientX: 20, clientY: 20 }); fireEvent.pointerMove(surface, { pointerId: 1, clientX: 80, clientY: 50 }); fireEvent.pointerUp(surface, { pointerId: 1, clientX: 120, clientY: 70 }); expect(screen.getByRole("button", { name: /undo pen mark/i })).not.toBeDisabled(); fireEvent.click(screen.getByRole("button", { name: /undo pen mark/i })); expect(screen.getByRole("button", { name: /undo pen mark/i })).toBeDisabled();
   });
 
   it("shows live and persisted grounded highlights in the primary whiteboard", async () => {

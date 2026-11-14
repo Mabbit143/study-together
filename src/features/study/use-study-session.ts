@@ -5,7 +5,7 @@ import type { StudyTurnResponse } from "@/features/ai/turn-schema";
 import { loadProfile, saveProfile, type OfflineStudyPackV1, type StudyProfileV1 } from "@/features/storage/local-store";
 import { addToOutbox, removeFromOutbox } from "@/features/offline/connection-sync";
 import { registerStudyServiceWorker } from "@/features/offline/service-worker";
-import { demoTurn } from "@/features/ai/demo-engine";
+import { demoPack, demoTurn } from "@/features/ai/demo-engine";
 import { defaultPeers } from "@/features/preferences/peer-preferences";
 import { followBranch } from "@/features/offline/pack-runner";
 
@@ -30,6 +30,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   const [materialOverride, setMaterialOverride] = useState<StudyMaterial>(session.material);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [boardPersisted, setBoardPersisted] = useState(Boolean(initialPack));
+  const [packNotice, setPackNotice] = useState("");
   const activeRequest = useRef<AbortController | null>(null);
   const contextEpoch = useRef(0);
   const sending = useRef(new Set<string>());
@@ -113,14 +114,22 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   }
   async function preparePack() {
     if (!online) { setStatus("offline-no-pack"); return; }
-    setStatus("loading"); const controller = new AbortController(); activeRequest.current?.abort(); activeRequest.current = controller; const epoch = contextEpoch.current;
-    try {
-      const response = await fetch("/api/offline-pack", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestBody(inputRef.current || "Prepare offline study.", false)), signal: controller.signal });
-      if (!response.ok) throw new Error(); const generated = await response.json() as OfflineStudyPackV1; if (activeRequest.current !== controller || contextEpoch.current !== epoch) return;
+    setPackNotice(""); setStatus("loading"); const controller = new AbortController(); activeRequest.current?.abort(); activeRequest.current = controller; const epoch = contextEpoch.current; const request = requestBody(inputRef.current || "Prepare offline study.", false);
+    const savePack = (generated: OfflineStudyPackV1, notice: string) => {
       const pack = { ...generated, board: { ...generated.board, notes: [...notesRef.current], highlights: [...highlightsRef.current], penMarks: [...penMarksRef.current], selectedTool: toolRef.current } };
-      if (!persist(currentProfileWithPack(pack))) { setBoardPersisted(false); return; }
-      activePackRef.current = pack; setActivePack(pack); setBoardPersisted(true); setStatus("success");
-    } catch (error) { if (activeRequest.current === controller) setStatus((error as { name?: string }).name === "AbortError" ? "success" : "provider-error"); }
+      if (!persist(currentProfileWithPack(pack))) { setBoardPersisted(false); return false; }
+      activePackRef.current = pack; setActivePack(pack); setBoardPersisted(true); setPackNotice(notice); setStatus("success"); return true;
+    };
+    try {
+      const response = await fetch("/api/offline-pack", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request), signal: controller.signal });
+      if (!response.ok) throw new Error(); const generated = await response.json() as OfflineStudyPackV1; if (activeRequest.current !== controller || contextEpoch.current !== epoch) return;
+      savePack(generated, "Offline study pack saved on this device and ready to use without a connection.");
+    } catch (error) {
+      if (activeRequest.current !== controller) return;
+      if ((error as { name?: string }).name === "AbortError") { setStatus("success"); return; }
+      const fallback = { ...demoPack({ ...request, demo: true }), id: `offline-${crypto.randomUUID()}` };
+      savePack(fallback, "Offline study pack saved from your confirmed excerpt. Live generation was unavailable, so this pack uses a reliable source-only study path.");
+    }
     finally { if (activeRequest.current === controller) activeRequest.current = null; }
   }
   async function sendQueued(id: string) {
@@ -134,7 +143,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   function clearBoard() { notesRef.current = []; highlightsRef.current = []; penMarksRef.current = []; setBoardNotesState([]); setHighlights([]); setPenMarks([]); setCurrentQuestion(""); updatePack((pack) => ({ ...pack, board: { ...pack.board, notes: [], highlights: [], penMarks: [] } })); }
   function saveMemory(kind: "helpful" | "difficult", text: string) { const current = profileRef.current; if (current && text.trim()) persist({ ...current, memory: { ...current.memory, [kind]: [...current.memory[kind], { id: crypto.randomUUID(), text: text.trim().slice(0, 300), subjectTitle: materialRef.current.title }] } }); }
   function cancelTurn() { invalidateActiveWork(); setStatus("success"); }
-  function applyMaterial(material: StudyMaterial) { setMaterialOverride(material); materialRef.current = material; activePackRef.current = null; setActivePack(null); turnsRef.current = []; setTurns([]); setCurrentQuestion(""); notesRef.current = []; highlightsRef.current = []; penMarksRef.current = []; setBoardNotesState([]); setHighlights([]); setPenMarks([]); toolRef.current = "pointer"; setSelectedToolState("pointer"); setBoardPersisted(false); }
+  function applyMaterial(material: StudyMaterial) { setMaterialOverride(material); materialRef.current = material; activePackRef.current = null; setActivePack(null); setPackNotice(""); turnsRef.current = []; setTurns([]); setCurrentQuestion(""); notesRef.current = []; highlightsRef.current = []; penMarksRef.current = []; setBoardNotesState([]); setHighlights([]); setPenMarks([]); toolRef.current = "pointer"; setSelectedToolState("pointer"); setBoardPersisted(false); }
   function applySubject(pack: OfflineStudyPackV1) { activePackRef.current = pack; setActivePack(pack); materialRef.current = { title: pack.title, excerpt: pack.excerpt, citation: "Saved prepared offline study pack" }; turnsRef.current = []; setTurns([]); setCurrentQuestion(""); notesRef.current = pack.board.notes; highlightsRef.current = pack.board.highlights; penMarksRef.current = pack.board.penMarks ?? []; toolRef.current = pack.board.selectedTool; setBoardNotesState(pack.board.notes); setHighlights(pack.board.highlights); setPenMarks(pack.board.penMarks ?? []); setSelectedToolState(pack.board.selectedTool); setBoardPersisted(true); }
   function activateMaterial(material: StudyMaterial) { invalidateActiveWork(); applyMaterial(material); setStatus(online ? "success" : "offline-no-pack"); }
   function activateSubject(pack: OfflineStudyPackV1) { invalidateActiveWork(); applySubject(pack); setStatus(online ? "success" : "offline-pack"); }
@@ -142,7 +151,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   function selectPack(id: string) { invalidateActiveWork(); const current = profileRef.current; const pack = current?.packs.find((item) => item.id === id); if (!pack || !current || !persist({ ...current, activePackId: id })) return; applySubject(pack); setStatus(online ? "success" : "offline-pack"); }
   function followOfflineBranch(id: string) { updatePack((pack) => followBranch(pack, id)); }
   function completePractice(id: string) { updatePack((pack) => ({ ...pack, progress: { ...pack.progress, completedPracticeIds: [...new Set([...pack.progress.completedPracticeIds, id])] } })); }
-  return { session, activeMaterial, subjectIdentity, profile, online, setOnline, input, setInput, turns, currentQuestion, boardSaveNotice, activePeerId, setActivePeerId, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, clearBoard, highlights, highlight, setHighlight, penMarks, setPenMarks: setPenMarksPersisted, selectedTool, setSelectedTool, activePack, activateMaterial, activateSubject, importPack, selectPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile };
+  return { session, activeMaterial, subjectIdentity, profile, online, setOnline, input, setInput, turns, currentQuestion, boardSaveNotice, packNotice, activePeerId, setActivePeerId, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, clearBoard, highlights, highlight, setHighlight, penMarks, setPenMarks: setPenMarksPersisted, selectedTool, setSelectedTool, activePack, activateMaterial, activateSubject, importPack, selectPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile };
 }
 
 export type StudySessionController = ReturnType<typeof useStudySession>;

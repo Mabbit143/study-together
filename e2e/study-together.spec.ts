@@ -170,8 +170,8 @@ test("downloads a complete offline pack, works offline, and never auto-sends que
   await expect(page.getByRole("heading", { name: "What does the source say about Cell biology?" })).toBeVisible();
 
   await page.getByRole("button", { name: "Simulate going offline" }).click();
-  await page.getByRole("button", { name: "Pointer" }).click(); await expect(page.getByText(/review and select board items/i)).toBeVisible();
-  await page.getByRole("button", { name: "Pen" }).click(); await page.getByLabel("Pen mark").fill("Connect mitochondria to energy"); await page.getByRole("button", { name: "Add pen mark" }).click();
+  await page.getByRole("button", { name: "Pen" }).click(); const drawingSurface = page.getByLabel("Drawable whiteboard surface"); const box = await drawingSurface.boundingBox(); expect(box).toBeTruthy(); await page.mouse.move(box!.x + 30, box!.y + 40); await page.mouse.down(); await page.mouse.move(box!.x + 130, box!.y + 90, { steps: 6 }); await page.mouse.up(); await expect(page.getByRole("button", { name: "Undo pen mark" })).toBeEnabled();
+  await page.getByRole("button", { name: "Pointer" }).click(); const drawing = page.getByRole("button", { name: "Drawing 1" }); await drawing.click(); await expect(drawing).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Sticky note" }).click(); await expect(page.getByLabel("Add board note")).toBeFocused();
   await page.getByLabel("Search confirmed excerpt").fill("Ribosomes");
   await page.getByRole("button", { name: /Highlight on whiteboard: Ribosomes/ }).click();
@@ -195,7 +195,7 @@ test("downloads a complete offline pack, works offline, and never auto-sends que
   await page.reload();
   await expect(page.getByRole("heading", { name: "Cell biology study group" })).toBeVisible();
   await expect(page.getByText("Compare mitochondria and ribosomes.", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Connect mitochondria to energy/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Drawing 1" })).toBeVisible();
   await expect(page.getByText("Ribosomes build proteins from amino acids", { exact: false }).last()).toBeVisible();
   await expect(page.getByText("Practice complete for this prepared branch.", { exact: true })).toBeVisible();
   await context.setOffline(false);

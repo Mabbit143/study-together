@@ -51,8 +51,17 @@ cite { color: var(--muted-ink); font-size: .9rem; }
 .tool-button { background: white; border: 1px solid var(--line); border-radius: .45rem; color: var(--ink); cursor: pointer; padding: .4rem .65rem; }
 .tool-button[aria-pressed="true"] { background: var(--moss); border-color: var(--evergreen); font-weight: 800; }
 .tool-button.danger { color: #91422a; }
-.board-surface { background-color: #fdfaf0; background-image: linear-gradient(#dbe4d245 1px, transparent 1px), linear-gradient(90deg, #dbe4d245 1px, transparent 1px); background-size: 22px 22px; border: 1px dashed var(--line); border-radius: .7rem; display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; min-height: 12rem; padding: 1.2rem; }
-.sticky-note { align-self: flex-start; background: var(--sun); box-shadow: 2px 3px 8px #6b592b26; margin: 0; padding: 1rem; transform: rotate(-1deg); }
+.board-surface { background-color: #fdfaf0; background-image: linear-gradient(#dbe4d245 1px, transparent 1px), linear-gradient(90deg, #dbe4d245 1px, transparent 1px); background-size: 22px 22px; border: 1px dashed var(--line); border-radius: .7rem; display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; min-height: 16rem; overflow: hidden; padding: 1.2rem; position: relative; }
+.board-surface-pen { cursor: crosshair; touch-action: none; user-select: none; }
+.board-surface-pointer { cursor: default; }
+.sticky-note { align-self: flex-start; background: var(--sun); border: 2px solid transparent; box-shadow: 2px 3px 8px #6b592b26; color: var(--ink); margin: 0; padding: 1rem; position: relative; transform: rotate(-1deg); z-index: 2; }
+.board-item { cursor: pointer; }
+.board-item[aria-pressed="true"] { border-color: var(--evergreen); box-shadow: 0 0 0 3px #255b4540; }
+.drawing-layer { height: 100%; inset: 0; overflow: visible; pointer-events: none; position: absolute; width: 100%; z-index: 1; }
+.pen-stroke { fill: none; pointer-events: stroke; stroke: var(--evergreen); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.pen-stroke[aria-pressed="true"] { filter: drop-shadow(0 0 2px #d06c2e); stroke: #d06c2e; stroke-width: 1.8; }
+.pen-stroke-draft { opacity: .75; pointer-events: none; }
+.pen-mark { background: #fff; border: 2px solid transparent; border-radius: .4rem; color: var(--ink); padding: .5rem; position: relative; z-index: 2; }
 .empty-board { align-self: center; color: var(--muted-ink); margin: auto; text-align: center; }
 .captions { align-self: start; grid-column: 2; }
 .captions > p:last-child { font-size: 1.08rem; line-height: 1.55; margin-bottom: 0; }

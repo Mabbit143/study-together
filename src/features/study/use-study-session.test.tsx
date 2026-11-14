@@ -45,6 +45,16 @@ describe("useStudySession", () => {
     expect(result.current.activePack?.branches[0].peerId).toBe("rae");
   });
 
+  it("prepares a source-only offline pack when live generation fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 502, json: async () => ({ code: "ungrounded_output" }) }));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO));
+    await act(() => result.current.preparePack());
+    expect(result.current.activePack?.excerpt).toBe(OLD_ENGLISH_DEMO.material.excerpt);
+    expect(result.current.activePack?.id).toMatch(/^offline-/);
+    expect(result.current.packNotice).toMatch(/saved from your confirmed excerpt/i);
+    expect(result.current.status).toBe("success");
+  });
+
   it("queues offline questions and never sends until explicit approval", async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ speaker: "jules", response: "A grounded answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) });
     vi.stubGlobal("fetch", fetcher);

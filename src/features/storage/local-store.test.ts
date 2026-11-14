@@ -10,6 +10,11 @@ describe("local study profile", () => {
   saveProfile({ ...loadProfile().profile, packs: [{ ...pack, branches: [] }] }); expect(loadProfile().profile.packs).toEqual([pack]);
   deletePack("one"); deleteQueuedQuestion("q"); expect(loadProfile().profile).toMatchObject({ packs: [], queuedQuestions: [] }); clearProfile();
  });
+ it("persists bounded whiteboard drawings larger than the old text-only mark limit", () => {
+  const drawing = `drawing:${JSON.stringify(Array.from({ length: 40 }, (_, index) => ({ x: index * 2, y: index })))}`;
+  const p = loadProfile().profile; p.packs = [{ ...pack, board: { ...pack.board, penMarks: [drawing] } }]; p.activePackId = pack.id; saveProfile(p);
+  expect(loadProfile().profile.packs[0].board.penMarks).toEqual([drawing]);
+ });
  it("keeps each peer independent and replacement preserves memory", () => {
   const p = loadProfile().profile; p.memory.helpful = [{ id: "a", text: "examples" }]; p.peers.rae.voice = "coral";
   const before = structuredClone(p.peers); p.peers.jules = replacePeer(p.peers.jules); saveProfile(p);
