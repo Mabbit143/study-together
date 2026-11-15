@@ -20,6 +20,7 @@ describe("local study profile", () => {
   const before = structuredClone(p.peers); p.peers.jules = replacePeer(p.peers.jules); saveProfile(p);
   const result = loadProfile().profile; expect(result.peers.jules.name).not.toBe(before.jules.name); expect(result.peers.rae).toEqual(before.rae); expect(result.peers.milo).toEqual(before.milo); expect(result.memory).toEqual(p.memory);
  });
+ it("round trips the optional device-only learner name", () => { const p = loadProfile().profile; saveProfile({ ...p, learnerName: "Mabbit" }); expect(loadProfile().profile.learnerName).toBe("Mabbit"); });
  it("edits and deletes duplicate text independently by ID", () => {
   const p = loadProfile().profile; p.memory.helpful = [{ id: "a", text: "same" }, { id: "b", text: "same" }]; saveProfile(p);
   editMemory("helpful", "a", "changed"); deleteMemory("helpful", "b"); expect(loadProfile().profile.memory.helpful).toEqual([{ id: "a", text: "changed" }]);
