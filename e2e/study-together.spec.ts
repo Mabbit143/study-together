@@ -38,10 +38,16 @@ async function seed(page: Page, value: ReturnType<typeof profile>) {
   }, [profileKey, value] as const);
 }
 
+async function beginNewSession(page: Page, subject: string, persona = "Creative personalities") {
+  await page.getByRole("button", { name: "Create new session" }).first().click();
+  await page.getByRole("textbox", { name: "What subject?" }).fill(subject);
+  await page.getByRole("radio", { name: new RegExp(persona, "i") }).click();
+}
+
 test("imports real PDF and DOCX fixtures and requires excerpt confirmation", async ({ page }) => {
   for (const fixture of ["old-english.pdf", "old-english.docx"]) {
     await page.goto("/");
-    await page.getByRole("button", { name: "Bring material" }).click();
+    await beginNewSession(page, "old-english");
     const file = page.getByLabel("Text, PDF, or DOCX file");
     await file.setInputFiles(path.resolve("src/features/materials/__fixtures__", fixture));
     await expect(page.getByRole("heading", { name: "Choose an excerpt" })).toBeVisible();
@@ -50,6 +56,7 @@ test("imports real PDF and DOCX fixtures and requires excerpt confirmation", asy
     await page.keyboard.press("ControlOrMeta+A");
     await expect(page.getByText(/characters selected/)).not.toHaveText("0 characters selected");
     await page.getByRole("button", { name: "Confirm excerpt" }).click();
+    await page.getByRole("button", { name: "Enter study room" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "old-english" })).toBeVisible();
     await expect(page.getByText("Sēo cwēn gesihþ þone cyning", { exact: true })).toBeVisible();
   }
@@ -62,12 +69,13 @@ test("brings biology through confirmation and returns subject-grounded guidance 
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ speaker: "rae", response: "The biology source says ribosomes build proteins from amino acids.", citedExcerpt: "Ribosomes build proteins from amino acids.", boardAction: { type: "highlight", text: "Ribosomes build proteins from amino acids." }, memorySuggestion: null, followUp: null }) });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Bring material" }).click();
+  await beginNewSession(page, "Biology");
   await page.getByLabel("Or paste text").fill(biologyExcerpt);
   await page.getByRole("button", { name: "Preview pasted text" }).click();
   const excerpt = page.getByLabel("Select the text you want to study");
   await excerpt.focus(); await page.keyboard.press("ControlOrMeta+A");
   await page.getByRole("button", { name: "Confirm excerpt" }).click();
+  await page.getByRole("button", { name: "Enter study room" }).click();
   await expect(page.getByText(biologyExcerpt, { exact: true })).toBeVisible();
   await expect(page.getByText("Sēo cwēn gesihð þone cyning", { exact: true })).toHaveCount(0);
   await expect(page.getByText("The queen sees the king.", { exact: false })).toHaveCount(0); await expect(page.getByText("cwēn = queen", { exact: true })).toHaveCount(0);
@@ -75,7 +83,7 @@ test("brings biology through confirmation and returns subject-grounded guidance 
   await page.getByLabel("Your question").fill("What do ribosomes do?");
   await page.getByRole("button", { name: "Send to the group" }).click();
   await expect(page.getByText("The biology source says ribosomes build proteins from amino acids.", { exact: true }).last()).toBeVisible();
-  expect(requestBody).toMatchObject({ speaker: "rae", question: "What do ribosomes do?", material: { title: "Pasted text", excerpt: biologyExcerpt }, recentTurns: [], selectedMemories: [] });
+  expect(requestBody).toMatchObject({ speaker: "rae", question: "What do ribosomes do?", material: { title: "Biology", excerpt: biologyExcerpt }, recentTurns: [], selectedMemories: [] });
 });
 
 test("keeps two subjects separate and resumes the explicitly selected pack", async ({ page }) => {
@@ -151,8 +159,8 @@ test("downloads a complete offline pack, works offline, and never auto-sends que
     expect(body).toMatchObject({ material: { excerpt: biologyExcerpt }, speaker: "rae" });
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(biology) });
   });
-  await page.goto("/"); await page.getByRole("button", { name: "Bring material" }).click(); await page.getByLabel("Or paste text").fill(biologyExcerpt); await page.getByRole("button", { name: "Preview pasted text" }).click();
-  const selection = page.getByLabel("Select the text you want to study"); await selection.focus(); await page.keyboard.press("ControlOrMeta+A"); await page.getByRole("button", { name: "Confirm excerpt" }).click();
+  await page.goto("/"); await beginNewSession(page, "Cell biology", "Seriously scientific"); await page.getByLabel("Or paste text").fill(biologyExcerpt); await page.getByRole("button", { name: "Preview pasted text" }).click();
+  const selection = page.getByLabel("Select the text you want to study"); await selection.focus(); await page.keyboard.press("ControlOrMeta+A"); await page.getByRole("button", { name: "Confirm excerpt" }).click(); await page.getByRole("button", { name: "Enter study room" }).click();
   await page.getByRole("button", { name: "Choose Rae for next turn" }).click(); await page.getByRole("button", { name: "Prepare offline study pack" }).click();
   await expect(page.getByRole("heading", { name: "What does the source say about Cell biology?" })).toBeVisible();
   const [download] = await Promise.all([

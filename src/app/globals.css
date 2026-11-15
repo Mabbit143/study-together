@@ -18,6 +18,11 @@ button, input, textarea, select { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #d06c2e; outline-offset: 3px; }
 .eyebrow { color: var(--evergreen); font-size: .78rem; font-weight: 800; letter-spacing: .11em; margin: 0 0 .4rem; text-transform: uppercase; }
 .landing, .study-room { margin: 0 auto; max-width: 1100px; padding: clamp(1.5rem, 5vw, 4.5rem); }
+.landing-header { align-items: center; background: #fffdf7e8; border-bottom: 1px solid var(--line); display: flex; gap: 1rem; min-height: 4rem; padding: .75rem clamp(1rem, 4vw, 3rem); position: sticky; top: 0; z-index: 20; }
+.menu-button { background: white; border: 1px solid var(--evergreen); border-radius: .5rem; color: var(--evergreen); cursor: pointer; font-size: 1.35rem; height: 2.7rem; width: 2.7rem; }
+.landing-menu { background: #fffdf7; border: 1px solid var(--line); border-radius: .7rem; box-shadow: 0 12px 30px #30452a22; display: grid; left: clamp(1rem, 4vw, 3rem); min-width: 14rem; padding: .5rem; position: absolute; top: 3.5rem; }
+.landing-menu button { background: transparent; border: 0; border-radius: .4rem; color: var(--ink); cursor: pointer; padding: .75rem; text-align: left; }
+.landing-menu button:hover { background: var(--moss); }
 .study-room, .room-grid, .room-grid > *, .panel, .integrated-flow { min-width: 0; }
 .study-room { overflow-wrap: anywhere; width: 100%; }
 .study-room button, .study-room input, .study-room textarea, .study-room select { max-width: 100%; min-width: 0; }
@@ -27,9 +32,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .start-panel { padding: clamp(2rem, 6vw, 5rem); }
 .start-panel h1 { font-family: Georgia, serif; font-size: clamp(2.8rem, 7vw, 5.6rem); line-height: .98; margin: 0; }
 .start-panel > p:not(.eyebrow) { color: var(--muted-ink); font-size: 1.15rem; line-height: 1.65; max-width: 43rem; }
-.primary-link { background: var(--evergreen); border-radius: .65rem; color: white; display: inline-block; font-weight: 800; padding: .9rem 1.2rem; text-decoration: none; }
+.primary-link { background: var(--evergreen); border: 0; border-radius: .65rem; color: white; cursor: pointer; display: inline-block; font-weight: 800; padding: .9rem 1.2rem; text-decoration: none; }
 .primary-link:hover { background: #164130; }
 .landing-note { line-height: 1.6; padding: 1.5rem; }
+.recent-sessions { grid-column: 1 / -1; }
+.recent-sessions ul { display: grid; gap: .65rem; list-style: none; padding: 0; }
+.recent-sessions a { color: var(--evergreen); font-weight: 800; }
+.new-session { display: grid; gap: 1rem; grid-column: 1 / -1; }
+.new-session > label, .new-session-material label { display: grid; font-weight: 700; gap: .35rem; }
+.new-session input, .new-session textarea { border: 1px solid var(--line); border-radius: .45rem; min-height: 2.75rem; padding: .65rem; width: 100%; }
+.new-session fieldset { border: 1px solid var(--line); border-radius: .7rem; padding: 1rem; }
+.new-session legend { font-family: Georgia, serif; font-size: 1.3rem; font-weight: 700; padding: 0 .4rem; }
+.persona-grid { display: grid; gap: .75rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.persona-option { border: 1px solid var(--line); border-radius: .7rem; cursor: pointer; display: grid; gap: .35rem; padding: 1rem; }
+.persona-option:has(input:checked) { background: var(--moss); border-color: var(--evergreen); }
+.persona-option input { min-height: auto; width: auto; }
+.persona-option span { color: var(--muted-ink); font-size: .92rem; line-height: 1.4; }
+.primary-action { background: var(--evergreen); border: 0; border-radius: .65rem; color: white; cursor: pointer; font-weight: 800; justify-self: start; padding: .9rem 1.2rem; }
+.primary-action:disabled { cursor: not-allowed; opacity: .55; }
+.confirmed-choice { background: var(--moss); border-radius: .5rem; padding: .75rem; }
 .room-header { align-items: end; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1.5rem; }
 .room-header h1, .panel h2 { font-family: Georgia, serif; margin: 0; }
 .room-header h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
@@ -80,5 +101,6 @@ cite { color: var(--muted-ink); font-size: .9rem; }
   .whiteboard, .captions { grid-column: auto; }
   .board-heading { flex-direction: column; }
   .board-tools { justify-content: start; }
+  .persona-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 360px) { .landing, .study-room { padding: 1rem; } .panel { padding: 1rem; } .room-status { white-space: normal; } }
