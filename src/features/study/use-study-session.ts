@@ -31,6 +31,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [boardPersisted, setBoardPersisted] = useState(Boolean(initialPack));
   const [packNotice, setPackNotice] = useState("");
+  const [focusTopic, setFocusTopicState] = useState("");
   const activeRequest = useRef<AbortController | null>(null);
   const contextEpoch = useRef(0);
   const sending = useRef(new Set<string>());
@@ -69,7 +70,8 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   function requestBody(question: string, demo: boolean, material = materialRef.current) {
     const subject = material.title.toLowerCase();
     const memories = [...(profileRef.current?.memory.helpful ?? []), ...(profileRef.current?.memory.difficult ?? [])].filter((item) => (item.subjectTitle ?? "General study").toLowerCase() === subject || (item.subjectTitle ?? "General study") === "General study").slice(-8).map((item) => ({ id: item.id, text: item.text.slice(0, 300) }));
-    return { sessionId: session.id, material, peers: profileRef.current?.peers ?? defaultPeers, recentTurns: turnsRef.current.slice(-8).map((turn) => ({ id: turn.id, peerId: turn.peerId, caption: turn.caption.slice(0, 1400), provenance: turn.provenance })), selectedMemories: memories, question: question.slice(0, 2000), speaker: activePeerId, demo };
+    const focusedQuestion = focusTopic.trim() ? `Current focus: ${focusTopic.trim()}\n\n${question}` : question;
+    return { sessionId: session.id, material, peers: profileRef.current?.peers ?? defaultPeers, recentTurns: turnsRef.current.slice(-8).map((turn) => ({ id: turn.id, peerId: turn.peerId, caption: turn.caption.slice(0, 1400), provenance: turn.provenance })), selectedMemories: memories, question: focusedQuestion.slice(0, 2000), speaker: activePeerId, demo };
   }
   function currentProfileWithPack(next: OfflineStudyPackV1) {
     const latest = profileRef.current ?? loadProfile().profile;
@@ -88,6 +90,11 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   function addBoardNote(note: string) { const clean = note.trim(); if (!clean) return; const next = [...notesRef.current, clean]; notesRef.current = next; setBoardNotesState(next); updatePack((pack) => ({ ...pack, board: { ...pack.board, notes: next } })); }
   function setSelectedTool(tool: BoardTool) { toolRef.current = tool; setSelectedToolState(tool); updatePack((pack) => ({ ...pack, board: { ...pack.board, selectedTool: tool } })); }
   function setPenMarksPersisted(marks: string[]) { penMarksRef.current = marks; setPenMarks(marks); updatePack((pack) => ({ ...pack, board: { ...pack.board, penMarks: marks } })); }
+  function setFocusTopic(value: string) { setFocusTopicState(value.trim().slice(0, 200)); }
+  function addMaterial(material: StudyMaterial) {
+    invalidateActiveWork(); const current = materialRef.current; const combined: StudyMaterial = { title: current.title, excerpt: `${current.excerpt}\n\n${material.excerpt}`.slice(0, 12_000), citation: `${current.citation}; ${material.citation}`.slice(0, 500) };
+    materialRef.current = combined; setMaterialOverride(combined); activePackRef.current = null; setActivePack(null); setBoardPersisted(false); setStatus(online ? "success" : "offline-no-pack");
+  }
 
   async function runTurn(question: string, demo = false, material = materialRef.current) {
     setStatus("loading"); setCurrentQuestion(question); const controller = new AbortController(); activeRequest.current?.abort(); activeRequest.current = controller; const epoch = contextEpoch.current;
@@ -151,7 +158,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   function selectPack(id: string) { invalidateActiveWork(); const current = profileRef.current; const pack = current?.packs.find((item) => item.id === id); if (!pack || !current || !persist({ ...current, activePackId: id })) return; applySubject(pack); setStatus(online ? "success" : "offline-pack"); }
   function followOfflineBranch(id: string) { updatePack((pack) => followBranch(pack, id)); }
   function completePractice(id: string) { updatePack((pack) => ({ ...pack, progress: { ...pack.progress, completedPracticeIds: [...new Set([...pack.progress.completedPracticeIds, id])] } })); }
-  return { session, activeMaterial, subjectIdentity, profile, online, setOnline, input, setInput, turns, currentQuestion, boardSaveNotice, packNotice, activePeerId, setActivePeerId, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, clearBoard, highlights, highlight, setHighlight, penMarks, setPenMarks: setPenMarksPersisted, selectedTool, setSelectedTool, activePack, activateMaterial, activateSubject, importPack, selectPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile };
+  return { session, activeMaterial, subjectIdentity, profile, online, setOnline, input, setInput, turns, currentQuestion, boardSaveNotice, packNotice, focusTopic, setFocusTopic, addMaterial, activePeerId, setActivePeerId, status, boardNotes, setBoardNotes: setBoardNotesPersisted, addBoardNote, clearBoard, highlights, highlight, setHighlight, penMarks, setPenMarks: setPenMarksPersisted, selectedTool, setSelectedTool, activePack, activateMaterial, activateSubject, importPack, selectPack, followOfflineBranch, completePractice, outbox, submitTurn, cancelTurn, useDemo, preparePack, sendQueued, deleteQueued, saveMemory, setProfile };
 }
 
 export type StudySessionController = ReturnType<typeof useStudySession>;

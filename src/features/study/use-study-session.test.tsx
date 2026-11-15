@@ -34,6 +34,17 @@ describe("useStudySession", () => {
     expect(result.current.turns.at(-1)?.peerId).toBe("milo");
   });
 
+  it("includes the selected focus topic in the next AI request", async () => {
+    let body: Record<string, unknown> | undefined; vi.stubGlobal("fetch", vi.fn(async (_url, init?: RequestInit) => { body = JSON.parse(String(init?.body)); return { ok: true, json: async () => ({ speaker: "jules", response: "Focused answer", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) }; }));
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); act(() => { result.current.setFocusTopic("verb forms"); result.current.setInput("What should I notice?"); }); await act(() => result.current.submitTurn());
+    expect(body).toMatchObject({ question: "Current focus: verb forms\n\nWhat should I notice?" });
+  });
+
+  it("adds confirmed material while preserving the current board", () => {
+    const { result } = renderHook(() => useStudySession(OLD_ENGLISH_DEMO)); const notes = result.current.boardNotes; act(() => result.current.addMaterial({ title: "Extra notes", excerpt: "A second confirmed passage.", citation: "Class handout" }));
+    expect(result.current.activeMaterial.excerpt).toContain(OLD_ENGLISH_DEMO.material.excerpt); expect(result.current.activeMaterial.excerpt).toContain("A second confirmed passage."); expect(result.current.boardNotes).toEqual(notes);
+  });
+
   it("uses the explicitly chosen peer when preparing an offline pack", async () => {
     let body: Record<string, unknown> | undefined;
     const pack = demoPack({ sessionId: "demo", material: OLD_ENGLISH_DEMO.material, peers: defaultPeers, recentTurns: [], selectedMemories: [], question: "Prepare", speaker: "rae", demo: true });

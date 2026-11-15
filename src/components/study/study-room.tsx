@@ -6,6 +6,8 @@ import { useStudySession } from "@/features/study/use-study-session";
 import { PeerList } from "./peer-list";
 import { Whiteboard } from "./whiteboard";
 import { StudyExperience } from "./study-experience";
+import { RoomWelcome } from "./room-welcome";
+import { RoomControls } from "./room-controls";
 
 type StudyRoomProps = {
   session: StudySession;
@@ -41,6 +43,9 @@ export function StudyRoom({ session }: StudyRoomProps) {
         <p className="room-status"><span aria-hidden="true" className="presence online" /> Live and focused</p>
       </header>
 
+      <RoomWelcome learnerName={study.profile?.learnerName} peers={visiblePeers} />
+      <RoomControls study={study} />
+
       <div className="room-grid">
         <section aria-labelledby="material-heading" className="panel material-card">
           <p className="eyebrow">Today&apos;s material</p>
@@ -50,7 +55,7 @@ export function StudyRoom({ session }: StudyRoomProps) {
         </section>
 
         <aside>
-          <PeerList peers={visiblePeers} />
+          <PeerList peers={visiblePeers} preferences={study.profile?.peers} onChange={(id, value) => { if (study.profile) study.setProfile({ ...study.profile, peers: { ...study.profile.peers, [id]: value } }); }} />
         </aside>
 
         <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, penMarks: study.penMarks, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onPenMarksChange={study.setPenMarks} onSelectedToolChange={study.setSelectedTool} onClear={study.clearBoard} currentTask={study.currentQuestion} />

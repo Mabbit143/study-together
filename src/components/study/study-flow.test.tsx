@@ -33,10 +33,12 @@ describe("StudyExperience", () => {
   });
 
   it("labels all recovery states and keeps peer controls available", () => {
-    render(<ExperienceHarness online={false} />);
+    const { unmount } = render(<ExperienceHarness online={false} />);
     expect(screen.getAllByText(/offline without a prepared pack/i)).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: /peer settings/i })).toHaveLength(3);
     expect(screen.getByRole("region", { name: /session status/i })).toHaveAttribute("aria-live", "polite");
+    unmount();
+    render(<StudyRoom session={OLD_ENGLISH_DEMO} />);
+    expect(screen.getAllByRole("button", { name: /adjust personality/i })).toHaveLength(3);
   });
 
   it("has no serious or critical automated accessibility violations", async () => {
@@ -77,7 +79,7 @@ describe("StudyExperience", () => {
 
   it("invalidates deferred speech when the responding peer voice changes", async () => {
     let resolve!: (value: unknown) => void; vi.stubGlobal("fetch", vi.fn(() => new Promise((done) => { resolve = done; }))); const createObjectURL = vi.fn(() => "blob:stale-voice"); Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
-    render(<ExperienceHarness />); fireEvent.click(screen.getByRole("button", { name: /play ai voice/i })); fireEvent.click(screen.getAllByRole("button", { name: /peer settings/i })[0]); fireEvent.change(screen.getByRole("combobox", { name: "Voice" }), { target: { value: "coral" } }); await act(async () => { resolve({ ok: true, blob: async () => new Blob(["late"]) }); await Promise.resolve(); await Promise.resolve(); }); expect(createObjectURL).not.toHaveBeenCalled(); expect(screen.queryByLabelText(/optional ai voice playback/i)).not.toBeInTheDocument();
+    render(<StudyRoom session={OLD_ENGLISH_DEMO} />); fireEvent.click(screen.getByRole("button", { name: /play ai voice/i })); fireEvent.click(screen.getAllByRole("button", { name: /adjust personality/i })[0]); fireEvent.change(screen.getByRole("combobox", { name: "Voice" }), { target: { value: "coral" } }); await act(async () => { resolve({ ok: true, blob: async () => new Blob(["late"]) }); await Promise.resolve(); await Promise.resolve(); }); expect(createObjectURL).not.toHaveBeenCalled(); expect(screen.queryByLabelText(/optional ai voice playback/i)).not.toBeInTheDocument();
   });
 
   it("invalidates deferred speech across a same-title material identity change", async () => {

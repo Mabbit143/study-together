@@ -113,7 +113,7 @@ test("customizes each peer, interrupts a response, and preserves learner memory"
   await page.goto("/?room=old-english-demo");
   await page.getByLabel("Your question").fill("Explain the verb from the source.");
   await page.getByRole("button", { name: "Practice this later" }).click();
-  const settings = page.getByRole("button", { name: "Peer settings" });
+  const settings = page.getByRole("button", { name: /Adjust personality/ });
   await expect(settings).toHaveCount(3);
   const voices = ["coral", "sage", "alloy"];
   const personalities = ["straightforward", "playful", "encouraging"];

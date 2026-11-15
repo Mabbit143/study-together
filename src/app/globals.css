@@ -58,6 +58,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .learner-greeting button { background: var(--evergreen); border: 0; border-radius: .5rem; color: white; cursor: pointer; font-weight: 800; margin-top: .75rem; padding: .7rem 1rem; }
 .learner-greeting button:disabled { cursor: not-allowed; opacity: .55; }
 .room-header { align-items: end; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1.5rem; }
+.room-welcome, .room-controls { margin-bottom: 1rem; }
+.room-welcome ul { display: grid; gap: .6rem; list-style: none; padding: 0; }
+.room-controls label { display: grid; font-weight: 700; gap: .35rem; margin: .7rem 0; }
+.room-controls input { border: 1px solid var(--line); border-radius: .45rem; min-height: 2.75rem; padding: .65rem; width: 100%; }
+.room-controls button { background: white; border: 1px solid var(--evergreen); border-radius: .45rem; color: var(--evergreen); cursor: pointer; padding: .55rem .75rem; }
+.text-link { background: transparent; border: 0; color: var(--evergreen); cursor: pointer; padding: .2rem 0; text-decoration: underline; }
 .room-header h1, .panel h2 { font-family: Georgia, serif; margin: 0; }
 .room-header h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
 .room-status { font-weight: 700; margin: 0; white-space: nowrap; }

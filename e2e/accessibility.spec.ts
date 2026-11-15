@@ -10,14 +10,14 @@ test("demo room has no serious accessibility violations at narrow width and 200 
     .filter((element) => element.getBoundingClientRect().right > window.innerWidth + 1)
     .map((element) => `${element.tagName}.${element.className}:${element.textContent?.trim().slice(0, 60)}`));
   expect(overflowing).toEqual([]);
-  const firstSettings = page.getByRole("button", { name: "Peer settings" }).first();
+  const firstSettings = page.getByRole("button", { name: /Adjust personality/ }).first();
   await firstSettings.focus();
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Tab");
   await expect(firstSettings).toBeFocused();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Peer settings" }).first()).toBeFocused();
+  await expect(page.getByRole("button", { name: /Adjust personality/ }).first()).toBeFocused();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact ?? ""))).toEqual([]);
 });
@@ -35,7 +35,7 @@ test("denied microphone leaves typed input available and never starts automatica
 
 test("keyboard-only learner changes and replaces a peer, clears the board, and completes a study action", async ({ page }) => {
   await page.goto("/?room=old-english-demo");
-  const firstSettings = page.getByRole("button", { name: "Peer settings" }).first();
+  const firstSettings = page.getByRole("button", { name: /Adjust personality/ }).first();
   await firstSettings.focus(); await page.keyboard.press("Enter");
   const voice = page.getByRole("combobox", { name: "Voice" });
   await voice.focus(); await page.keyboard.press("ArrowDown");

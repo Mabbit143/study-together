@@ -18,6 +18,12 @@ describe("StudyRoom", () => {
     expect(screen.getByRole("button", { name: "Pen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sticky note" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Clear board" })).toBeInTheDocument();
+    expect(screen.getByText(/Hi there, I'm Jules/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hey there, I'm Rae/i)).toBeInTheDocument();
+    expect(screen.getByText(/Welcome there, I'm Milo/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Select focus topic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload more class materials" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Adjust personality/ })).toHaveLength(3);
   });
 
   it("rejects a session whose active-turn ID does not identify exactly one turn", () => {
