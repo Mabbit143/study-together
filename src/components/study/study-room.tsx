@@ -58,7 +58,7 @@ export function StudyRoom({ session }: StudyRoomProps) {
           <PeerList peers={visiblePeers} preferences={study.profile?.peers} onChange={(id, value) => { if (study.profile) study.setProfile({ ...study.profile, peers: { ...study.profile.peers, [id]: value } }); }} />
         </aside>
 
-        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, penMarks: study.penMarks, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onPenMarksChange={study.setPenMarks} onSelectedToolChange={study.setSelectedTool} onClear={study.clearBoard} currentTask={study.currentQuestion} />
+        <Whiteboard board={{ notes: study.boardNotes, highlights: study.highlights, penMarks: study.penMarks, selectedTool: study.selectedTool }} onNotesChange={study.setBoardNotes} onPenMarksChange={study.setPenMarks} onSelectedToolChange={study.setSelectedTool} onClear={study.clearBoard} onSaveSelection={(excerpt) => study.addMaterial({ title: study.activeMaterial.title, excerpt, citation: "Saved from the shared whiteboard" })} currentTask={study.currentQuestion} />
 
         <section aria-labelledby="captions-heading" className="panel captions" role="status">
           <p className="eyebrow">Live support</p>

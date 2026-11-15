@@ -106,6 +106,44 @@ describe("StudyExperience", () => {
     fireEvent.pointerDown(surface, { pointerId: 1, clientX: 20, clientY: 20 }); fireEvent.pointerMove(surface, { pointerId: 1, clientX: 80, clientY: 50 }); fireEvent.pointerUp(surface, { pointerId: 1, clientX: 120, clientY: 70 }); expect(screen.getByRole("button", { name: /undo pen mark/i })).not.toBeDisabled(); fireEvent.click(screen.getByRole("button", { name: /undo pen mark/i })); expect(screen.getByRole("button", { name: /undo pen mark/i })).toBeDisabled();
   });
 
+  it("styles member notes, draws and erases shapes, and saves a selected group as material", () => {
+    render(<StudyRoom session={OLD_ENGLISH_DEMO} />);
+    expect(screen.getByLabelText(/sticky-note color key/i)).toHaveTextContent("YouJulesRaeMilo");
+    fireEvent.click(screen.getByRole("button", { name: /sticky note/i }));
+    fireEvent.change(screen.getByRole("combobox", { name: /sticky-note font size/i }), { target: { value: "20" } });
+    fireEvent.change(screen.getByRole("combobox", { name: /note author/i }), { target: { value: "rae" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /add board note/i }), { target: { value: "Rae's review point" } });
+    fireEvent.click(screen.getByRole("button", { name: /save board note/i }));
+    const styledNote = screen.getByRole("button", { name: "Rae's review point" });
+    expect(styledNote).toHaveAttribute("data-author", "rae");
+    expect(styledNote).toHaveStyle({ backgroundColor: "#cfe0ff", fontSize: "20px" });
+
+    fireEvent.click(screen.getByRole("button", { name: /rectangle/i }));
+    const surface = screen.getByLabelText(/drawable whiteboard surface/i);
+    Object.defineProperty(surface, "getBoundingClientRect", { value: () => ({ left: 0, top: 0, width: 200, height: 100, right: 200, bottom: 100, x: 0, y: 0, toJSON: () => ({}) }) });
+    fireEvent.pointerDown(surface, { pointerId: 2, clientX: 20, clientY: 20 });
+    fireEvent.pointerMove(surface, { pointerId: 2, clientX: 80, clientY: 50 });
+    fireEvent.pointerUp(surface, { pointerId: 2, clientX: 100, clientY: 60 });
+    const rectangle = screen.getByRole("button", { name: /rectangle 1/i });
+    fireEvent.click(screen.getByRole("button", { name: /eraser/i }));
+    fireEvent.click(rectangle);
+    expect(screen.queryByRole("button", { name: /rectangle 1/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /circle/i }));
+    fireEvent.pointerDown(surface, { pointerId: 3, clientX: 20, clientY: 20 });
+    fireEvent.pointerUp(surface, { pointerId: 3, clientX: 60, clientY: 50 });
+    fireEvent.pointerDown(surface, { pointerId: 4, clientX: 100, clientY: 30 });
+    fireEvent.pointerUp(surface, { pointerId: 4, clientX: 150, clientY: 70 });
+    fireEvent.click(screen.getByRole("button", { name: /select group/i }));
+    fireEvent.pointerDown(surface, { pointerId: 5, clientX: 0, clientY: 0 });
+    fireEvent.pointerMove(surface, { pointerId: 5, clientX: 200, clientY: 100 });
+    fireEvent.pointerUp(surface, { pointerId: 5, clientX: 200, clientY: 100 });
+    expect(screen.getByText(/2 selected/i)).toBeInTheDocument();
+    fireEvent.click(styledNote);
+    fireEvent.click(screen.getByRole("button", { name: /save selection as study material/i }));
+    expect(screen.getByText(/saved from the shared whiteboard/i)).toBeInTheDocument();
+  });
+
   it("shows live and persisted grounded highlights in the primary whiteboard", async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ speaker: "jules", response: "Queen is supported by the excerpt.", supportStatus: "supported", citedExcerpt: "cwēn", boardAction: null, memorySuggestion: null, followUp: null }) }); vi.stubGlobal("fetch", fetcher);
     render(<StudyRoom session={OLD_ENGLISH_DEMO} />); fireEvent.change(screen.getByRole("textbox", { name: /^your question$/i }), { target: { value: "What is queen?" } }); fireEvent.click(screen.getByRole("button", { name: /send to the group/i }));
