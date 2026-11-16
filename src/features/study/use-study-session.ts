@@ -102,7 +102,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
       const response = await fetch("/api/study-turn", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestBody(question, demo, material)), signal: controller.signal });
       if (!response.ok) { if (activeRequest.current === controller) setStatus(response.status === 429 ? "rate-limit" : "provider-error"); return false; }
       const data = await response.json() as StudyTurnResponse; if (activeRequest.current !== controller || contextEpoch.current !== epoch) return false;
-      const next: StudyTurn = { id: crypto.randomUUID(), peerId: data.speaker, caption: data.response, provenance: data.supportStatus === "supported" && data.citedExcerpt ? { status: "cited", sourceCitation: material.citation } : { status: "general-knowledge" }, followUp: data.followUp, memorySuggestion: data.memorySuggestion, supportStatus: data.supportStatus };
+      const next: StudyTurn = { id: crypto.randomUUID(), peerId: data.speaker, question, caption: data.response, provenance: data.supportStatus === "supported" && data.citedExcerpt ? { status: "cited", sourceCitation: material.citation } : { status: "general-knowledge" }, followUp: data.followUp, memorySuggestion: data.memorySuggestion, supportStatus: data.supportStatus };
       setTurns((items) => { const updated = [...items, next]; turnsRef.current = updated; return updated; }); if (data.citedExcerpt) setHighlight(data.citedExcerpt); if (data.boardAction?.type === "add-note") addBoardNote(data.boardAction.text);
       setInputState((draft) => draft === question ? "" : draft); setStatus(demo ? "demo" : "success"); return true;
     } catch (error) { if (activeRequest.current === controller) setStatus((error as { name?: string }).name === "AbortError" ? "success" : "provider-error"); return false; }
@@ -116,7 +116,7 @@ export function useStudySession(session: StudySession, initialOnline = true) {
   }
   async function useDemo() {
     const question = inputRef.current || "Give me another example."; const material = materialRef.current; const data = demoTurn(requestBody(question, true, material));
-    const next: StudyTurn = { id: crypto.randomUUID(), peerId: data.speaker, caption: data.response, provenance: { status: "cited", sourceCitation: material.citation }, followUp: data.followUp, memorySuggestion: data.memorySuggestion, supportStatus: data.supportStatus };
+    const next: StudyTurn = { id: crypto.randomUUID(), peerId: data.speaker, question, caption: data.response, provenance: { status: "cited", sourceCitation: material.citation }, followUp: data.followUp, memorySuggestion: data.memorySuggestion, supportStatus: data.supportStatus };
     setTurns((items) => { const updated = [...items, next]; turnsRef.current = updated; return updated; }); setHighlight(data.citedExcerpt ?? ""); setInput(""); setCurrentQuestion(question); setStatus("demo");
   }
   async function preparePack() {

@@ -28,6 +28,7 @@ export type AnswerProvenance =
 export type StudyTurn = {
   id: string;
   peerId: PeerId;
+  question?: string;
   caption: string;
   provenance: AnswerProvenance;
   followUp?: string | null;

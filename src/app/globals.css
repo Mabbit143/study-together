@@ -120,8 +120,12 @@ cite { color: var(--muted-ink); font-size: .9rem; }
 .study-break { background: #fff8dc; border-color: #d7b55b; }
 .break-chat { display: grid; gap: .65rem; margin: 1rem 0; }
 .break-chat p { background: white; border: 1px solid #ead9a8; border-radius: .65rem; margin: 0; padding: .8rem; }
+.starter-pack-grid { display: grid; gap: .75rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.starter-pack-grid article { border: 1px solid var(--line); border-radius: .65rem; padding: .8rem; }
+.starter-pack-grid h3 { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (max-width: 760px) {
+  .starter-pack-grid { grid-template-columns: 1fr; }
   .landing, .room-grid { grid-template-columns: 1fr; }
   .room-header { align-items: start; flex-direction: column; }
   .whiteboard, .captions { grid-column: auto; }

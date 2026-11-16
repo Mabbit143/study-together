@@ -246,3 +246,20 @@ test("offline without a pack survives a real service-worker reload and keeps det
   await expect(page.getByRole("button", { name: "Prepare offline study pack" })).toBeDisabled();
   await context.setOffline(false);
 });
+
+test("exports the transcript and opens a built-in grounded topic pack", async ({ page }) => {
+  await page.goto("/?room=old-english-demo");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Export transcript" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/practice-sentence-transcript\.txt/i);
+  const filePath = await download.path();
+  expect(filePath).toBeTruthy();
+  const transcript = await (await import("node:fs/promises")).readFile(filePath!, "utf8");
+  expect(transcript).toContain("Rae: Yes. The sentence means: The queen sees the king.");
+
+  await page.getByRole("button", { name: "Start topic: Cell biology essentials" }).click();
+  await expect(page.getByRole("heading", { name: "Cell biology essentials study group" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How are mitochondria and ribosomes different?" })).toBeVisible();
+});

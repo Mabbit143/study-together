@@ -24,6 +24,11 @@ describe("StudyRoom", () => {
     expect(screen.getByRole("button", { name: "Select focus topic" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload more class materials" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Adjust personality/ })).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "Export transcript" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Start topic:/ })).toHaveLength(3);
+    expect(screen.getByRole("heading", { name: "Old English sentence roles" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Cell biology essentials" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Source evaluation basics" })).toBeInTheDocument();
   });
 
   it("rejects a session whose active-turn ID does not identify exactly one turn", () => {
