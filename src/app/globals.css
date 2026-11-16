@@ -116,6 +116,10 @@ cite { color: var(--muted-ink); font-size: .9rem; }
 .integrated-flow button:disabled { cursor: not-allowed; opacity: .55; }
 .session-status, .offline-label { background: var(--moss); border-radius: .5rem; padding: .75rem; }
 .study-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.study-break-entry { border-left: 5px solid var(--sun); }
+.study-break { background: #fff8dc; border-color: #d7b55b; }
+.break-chat { display: grid; gap: .65rem; margin: 1rem 0; }
+.break-chat p { background: white; border: 1px solid #ead9a8; border-radius: .65rem; margin: 0; padding: .8rem; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (max-width: 760px) {
   .landing, .room-grid { grid-template-columns: 1fr; }
